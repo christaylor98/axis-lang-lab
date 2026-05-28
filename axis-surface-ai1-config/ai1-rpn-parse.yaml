@@ -1,0 +1,102 @@
+# Semantic-Surface-AI-1 Parser Specification (RPN/Postfix)
+# Version: Wave AI1
+# Status: TOKEN-KIND-ONLY (ENFORCED)
+# Authority: Wave AI1 Execution Prompt
+#
+# ══════════════════════════════════════════════════════════════════════════
+# TOKEN-KIND-ONLY INVARIANT (HARD-ENFORCED)
+# ══════════════════════════════════════════════════════════════════════════
+#
+# This parser spec MUST use ONLY explicit token kinds.
+#
+# VALID SYNTAX:
+#   - <IDENT>         Token kind for identifiers
+#   - <INT>           Token kind for integers
+#   - <KW_XXX>        Token kind for keyword "xxx"
+#   - <PUNCT_XXX>     Token kind for punctuation "xxx"
+#
+# FORBIDDEN SYNTAX (HARD ERROR):
+#   - "fn"            Quoted strings are REJECTED
+#   - kw:"fn"         Legacy keyword syntax is REJECTED  
+#   - punct:"("       Legacy punctuation syntax is REJECTED
+#   - IDENT           ALL_CAPS without angle brackets is REJECTED
+#
+# The parser operates EXCLUSIVELY on token kinds.
+# It does NOT inspect lexemes, strings, or character values.
+# ══════════════════════════════════════════════════════════════════════════
+
+parser:
+  start: Program
+  
+  grammar:
+    # Program: a sequence of atoms and operators that reduces to a single Expr
+    # Parser runtime must implement postfix stack reduction
+    Program:
+      - Item+
+    
+    # Item: any atom or operator in the postfix stream
+    Item:
+      - IntLit
+      - BoolLit
+      - UnitLit
+      - VarRef
+      - AppOp
+      - LamOp
+      - LetOp
+      - IfOp
+    
+    # Atoms push to stack
+    IntLit:
+      - <INT>
+    
+    BoolLit:
+      - <KW_TRUE>
+      - <KW_FALSE>
+    
+    UnitLit:
+      - <KW_UNIT>
+    
+    VarRef:
+      - <IDENT>
+    
+    # Operators pop from stack and push result
+    # app: pops 2 (fn, arg), pushes App(fn, arg)
+    AppOp:
+      - <KW_APP>
+    
+    # lam IDENT: pops 1 (body), consumes IDENT, pushes Lam(param, body)
+    LamOp:
+      - <KW_LAM> <IDENT>
+    
+    # let IDENT: pops 2 (value, body), consumes IDENT, pushes Let(name, value, body)
+    LetOp:
+      - <KW_LET> <IDENT>
+    
+    # if: pops 3 (cond, then, else), pushes If(cond, then, else)
+    IfOp:
+      - <KW_IF>
+
+# POSTFIX REDUCTION SEMANTICS (for parser runtime implementation):
+#
+# The parser must:
+# 1. Tokenize input into Items
+# 2. Process Items left-to-right with a stack
+# 3. For atoms (IntLit/BoolLit/UnitLit/VarRef): push as-is
+# 4. For operators:
+#    - app: pop arg, pop fn, push AppExpr(fn, arg)
+#    - lam IDENT: pop body, push LamExpr(param=IDENT, body)
+#    - let IDENT: pop body, pop value, push LetExpr(name=IDENT, value, body)
+#    - if: pop else_branch, pop then_branch, pop cond, push IfExpr(cond, then, else)
+# 5. At EOF: stack must contain exactly 1 Expr
+# 6. Hard errors:
+#    - Stack underflow on any operator
+#    - Stack size != 1 at EOF
+#    - Missing IDENT for lam/let operators
+#    - Any '(' or ')' characters in source (lexer should reject)
+#
+# CST structure after reduction:
+# The final CST root should be one of:
+# - IntLit, BoolLit, UnitLit, VarRef, AppExpr, LamExpr, LetExpr, IfExpr
+#
+# These match the same node names as Semantic-Surface-0 schema expects,
+# so the existing schema AST mapping can be reused.

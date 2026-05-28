@@ -1,0 +1,70 @@
+# Semantic-Surface-0 Parser Specification
+# Version: Wave S1
+# Status: TOKEN-KIND-ONLY (ENFORCED)
+# Authority: SEMANTIC-SURFACE-0-DEFINITION.md
+#
+# ══════════════════════════════════════════════════════════════════════════
+# TOKEN-KIND-ONLY INVARIANT (HARD-ENFORCED)
+# ══════════════════════════════════════════════════════════════════════════
+#
+# VALID:   <KW_FN>, <PUNCT_=>>>, <IDENT>, <INT>, <BOOL>, <UNIT>
+# INVALID: "fn", kw:"fn", punct:"=>", FN, PUNCT
+#
+# Parser matches token kinds only. No lexeme inspection.
+# ══════════════════════════════════════════════════════════════════════════
+
+parser:
+  start: Expr
+  
+  grammar:
+    # Top-level expression: let, fn, if, or application
+    Expr:
+      - LetExpr
+      - LamExpr
+      - IfExpr
+      - AppExpr
+    
+    # Let binding: let <name> = <expr> in <body>
+    LetExpr:
+      - <KW_LET> <IDENT> <PUNCT_=> Expr <KW_IN> Expr
+    
+    # Lambda abstraction: fn <param> => <body>
+    LamExpr:
+      - <KW_FN> <IDENT> <"PUNCT_=>"> Expr
+    
+    # Conditional: if <cond> then <t> else <f>
+    IfExpr:
+      - <KW_IF> Expr <KW_THEN> Expr <KW_ELSE> Expr
+    
+    # Application: left-associative function application
+    # AppExpr handles: f(x), f(x)(y), etc.
+    # NOTE: Using repetition to avoid left-recursion
+    # CST will have: [AtomicExpr, "(", Expr, ")", "(", Expr, ")", ...]
+    # Schema extraction children(0..) skips terminals, giving: [AtomicExpr, Expr, Expr, ...]
+    # Lowering must interpret this as left-associative applications
+    AppExpr:
+      - AtomicExpr (<PUNCT_(> Expr <PUNCT_)>)*
+    
+    # Atomic expressions: literals, variables, parenthesized
+    AtomicExpr:
+      - IntLit
+      - BoolLit
+      - UnitLit
+      - VarRef
+      - <PUNCT_(> Expr <PUNCT_)>
+    
+    # Integer literal
+    IntLit:
+      - <INT_LIT>
+    
+    # Boolean literal
+    BoolLit:
+      - <BOOL_LIT>
+    
+    # Unit literal
+    UnitLit:
+      - <UNIT_LIT>
+    
+    # Variable reference
+    VarRef:
+      - <IDENT>

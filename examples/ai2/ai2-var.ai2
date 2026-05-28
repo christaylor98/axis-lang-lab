@@ -1,0 +1,4 @@
+// AI2 Test 2: Variable reference
+// H1 equivalent: x
+
+var(name = x)

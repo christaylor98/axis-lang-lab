@@ -1,0 +1,6 @@
+// Minimal test for ForExpr projection
+// Run with --inspect ast to verify ForExpr appears
+
+for x in y {
+  x
+}

@@ -1,0 +1,4 @@
+// AI2 Test 4: Application
+// H1 equivalent: f x
+
+app(fn = var(name = f), arg = var(name = x))

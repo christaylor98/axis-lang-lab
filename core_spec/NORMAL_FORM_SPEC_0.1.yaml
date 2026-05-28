@@ -1,0 +1,332 @@
+# Normal Form (NF) Target Specification 0.1
+# AUTHORITATIVE — defines the ONLY AST shape eligible for mechanical lowering to Core IR
+#
+# STATUS: Normative
+# VERSION: 0.1
+# TARGET_IR: Core IR 0.2
+#
+# PURPOSE:
+# This specification defines Normal Form (NF) AST, the canonical structural
+# representation that sits between surface AST projection and mechanical lowering.
+#
+# SCOPE:
+# - Defines admissible node kinds for NF AST
+# - Defines required fields per node kind
+# - Defines allowed child relationships
+# - Defines forbidden patterns
+# - Defines structural invariants
+#
+# OUT OF SCOPE:
+# - Semantic meaning (defined by lowering)
+# - Type rules (enforced elsewhere)
+# - Name resolution (separate pass)
+# - Registry interaction (bridge responsibility)
+#
+# INVARIANTS:
+# 1. Only NF AST may be lowered to Core IR
+# 2. Normalization MUST produce only NF AST
+# 3. All surface sugar MUST be eliminated before NF
+# 4. NF AST is surface-independent
+# 5. NF validation is mandatory and deterministic
+#
+# ═══════════════════════════════════════════════════════════════════════════
+# METADATA
+# ═══════════════════════════════════════════════════════════════════════════
+
+version: "0.1"
+target_ir_version: "0.2"
+description: "Normal Form AST specification for mechanical lowering to Core IR"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# NF ADMISSIBLE NODE SET
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# These are the ONLY node kinds permitted in Normal Form AST.
+# Any node kind not listed here is FORBIDDEN and MUST cause validation failure.
+#
+# Each node kind maps 1:1 to a Core IR construct during mechanical lowering.
+
+admissible_nodes:
+  # ─────────────────────────────────────────────────────────────────────────
+  # LITERALS
+  # ─────────────────────────────────────────────────────────────────────────
+  
+  IntLit:
+    description: "Integer literal"
+    lowering_target: "CIntLit"
+    required_fields:
+      - value  # token containing integer value
+    optional_fields: []
+    allowed_children: []
+    structural_constraints:
+      - "value must be a valid integer token"
+
+  BoolLit:
+    description: "Boolean literal"
+    lowering_target: "CBoolLit"
+    required_fields:
+      - value  # token containing 'true' or 'false'
+    optional_fields: []
+    allowed_children: []
+    structural_constraints:
+      - "value must be 'true' or 'false'"
+
+  UnitLit:
+    description: "Unit literal (empty value)"
+    lowering_target: "CUnitLit"
+    required_fields: []
+    optional_fields: []
+    allowed_children: []
+    structural_constraints: []
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # VARIABLES AND BINDING
+  # ─────────────────────────────────────────────────────────────────────────
+
+  VarRef:
+    description: "Variable reference"
+    lowering_target: "CVar"
+    required_fields:
+      - name  # identifier token
+    optional_fields: []
+    allowed_children: []
+    structural_constraints:
+      - "name must be a valid identifier"
+
+  LetExpr:
+    description: "Let binding (expression form)"
+    lowering_target: "CLet"
+    required_fields:
+      - name   # identifier token
+      - value  # NF expression node
+      - body   # NF expression node
+    optional_fields: []
+    allowed_children:
+      - value
+      - body
+    structural_constraints:
+      - "value and body must be NF expressions"
+      - "name must be a valid identifier"
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # FUNCTIONS AND APPLICATION
+  # ─────────────────────────────────────────────────────────────────────────
+
+  LamExpr:
+    description: "Lambda abstraction"
+    lowering_target: "CLam"
+    required_fields:
+      - param  # identifier token
+      - body   # NF expression node
+    optional_fields: []
+    allowed_children:
+      - body
+    structural_constraints:
+      - "param must be a valid identifier"
+      - "body must be an NF expression"
+
+  AppExpr:
+    description: "Function application"
+    lowering_target: "CApp"
+    required_fields:
+      - fn   # NF expression node (function)
+      - arg  # NF expression node (argument)
+    optional_fields: []
+    allowed_children:
+      - fn
+      - arg
+    structural_constraints:
+      - "fn and arg must be NF expressions"
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # CONTROL FLOW
+  # ─────────────────────────────────────────────────────────────────────────
+
+  IfExpr:
+    description: "Conditional expression (explicit then/else)"
+    lowering_target: "CIf"
+    required_fields:
+      - condition     # NF expression node
+      - then_branch   # NF expression node
+      - else_branch   # NF expression node
+    optional_fields: []
+    allowed_children:
+      - condition
+      - then_branch
+      - else_branch
+    structural_constraints:
+      - "all branches must be NF expressions"
+      - "else_branch is REQUIRED (no implicit else)"
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # REGISTRY FUNCTION CALLS
+  # ─────────────────────────────────────────────────────────────────────────
+
+  CallExpr:
+    description: "Registry function call"
+    lowering_target: "CCall"
+    required_fields:
+      - name  # function name (identifier token)
+      - args  # list of NF expression nodes
+    optional_fields: []
+    allowed_children:
+      - args
+    structural_constraints:
+      - "name must reference a registry function"
+      - "all args must be NF expressions"
+      - "arity must match registry declaration"
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # STRUCTURAL WRAPPERS (surface-specific, minimal)
+  # ─────────────────────────────────────────────────────────────────────────
+
+  Expr:
+    description: "Expression wrapper (top-level or nested)"
+    lowering_target: "transparent"
+    required_fields:
+      - inner  # NF expression node
+    optional_fields: []
+    allowed_children:
+      - inner
+    structural_constraints:
+      - "inner must be an NF expression"
+      - "this node is transparent during lowering"
+
+  Program:
+    description: "Top-level program wrapper"
+    lowering_target: "transparent"
+    required_fields:
+      - body  # NF expression node
+    optional_fields: []
+    allowed_children:
+      - body
+    structural_constraints:
+      - "body must be an NF expression"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# FORBIDDEN CONSTRUCTS
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# The following patterns are EXPLICITLY FORBIDDEN in NF AST.
+# Presence of any of these MUST cause immediate validation failure.
+
+forbidden_patterns:
+  # Sugar and abbreviated forms
+  - pattern: "ImplicitElse"
+    reason: "All conditionals must have explicit else branches"
+    
+  - pattern: "ChainedApplication"
+    reason: "Multi-argument application must be nested binary AppExpr"
+    
+  - pattern: "SequenceExpr"
+    reason: "Sequential evaluation must use nested LetExpr"
+    
+  - pattern: "BlockExpr"
+    reason: "Blocks must be desugared to nested LetExpr"
+    
+  # Surface-specific constructs
+  - pattern: "ForLoop"
+    reason: "Loops must be desugared before NF"
+    
+  - pattern: "WhileLoop"
+    reason: "Loops must be desugared before NF"
+    
+  - pattern: "MatchExpr"
+    reason: "Pattern matching must be desugared to nested IfExpr"
+    
+  - pattern: "TupleExpr"
+    reason: "Tuples must be desugared before NF"
+    
+  - pattern: "ListExpr"
+    reason: "Collections must be desugared before NF"
+    
+  # Implicit constructs
+  - pattern: "ImplicitReturn"
+    reason: "All returns must be explicit in NF"
+    
+  - pattern: "ImplicitUnit"
+    reason: "Unit values must be explicit UnitLit nodes"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# STRUCTURAL INVARIANTS
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# These invariants MUST hold for all NF AST.
+# Validation MUST check and enforce these.
+
+structural_invariants:
+  - id: "NF-INV-1"
+    description: "Every node kind in the AST is in the admissible set"
+    enforcement: "mandatory"
+    
+  - id: "NF-INV-2"
+    description: "All required fields are present for each node"
+    enforcement: "mandatory"
+    
+  - id: "NF-INV-3"
+    description: "All child nodes are also NF-compliant"
+    enforcement: "mandatory"
+    
+  - id: "NF-INV-4"
+    description: "No forbidden patterns appear anywhere in the tree"
+    enforcement: "mandatory"
+    
+  - id: "NF-INV-5"
+    description: "All IfExpr have explicit else branches"
+    enforcement: "mandatory"
+    
+  - id: "NF-INV-6"
+    description: "All CallExpr reference valid registry functions"
+    enforcement: "deferred_to_lowering"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# VALIDATION REQUIREMENTS
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# NF validation MUST:
+
+validation_requirements:
+  - "Be deterministic (same AST → same result)"
+  - "Be total (never panic, always return Result)"
+  - "Be pure (no side effects, no AST modification)"
+  - "Be recursive (check entire tree)"
+  - "Fail loud on any violation"
+  - "Provide clear error messages with spans"
+  - "Run BEFORE lowering"
+  - "Block lowering on failure"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# MECHANICAL LOWERING CONTRACT
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Once an AST is validated as NF-compliant, mechanical lowering MUST:
+
+lowering_contract:
+  - "Accept ONLY NF AST (enforced by type system or explicit guard)"
+  - "Map each NF node to exactly one Core IR construct"
+  - "Perform NO rewriting or transformation"
+  - "Perform NO validation (already done)"
+  - "Be deterministic and total"
+  - "Produce Core IR 0.2 compliant output"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# VERSIONING AND EVOLUTION
+# ═══════════════════════════════════════════════════════════════════════════
+
+versioning:
+  current_version: "0.1"
+  target_ir_version: "0.2"
+  compatibility_policy: "Strict - breaking changes require version bump"
+  extension_policy: "New admissible nodes require new version"
+  deprecation_policy: "Removing nodes requires major version bump"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# NOTES
+# ═══════════════════════════════════════════════════════════════════════════
+
+notes:
+  - "This spec is surface-independent"
+  - "All surfaces must normalize to this same NF shape"
+  - "NF validation is a hard boundary - no lowering without it"
+  - "Registry interaction happens ONLY during lowering"
+  - "This spec is the contract between normalization and lowering"

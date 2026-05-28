@@ -1,0 +1,8 @@
+fn keywords_vs_idents() {
+    fn
+    fnord
+    if
+    ifx
+    let
+    letter
+}

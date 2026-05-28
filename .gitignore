@@ -1,0 +1,21 @@
+# Rust build output
+/target
+**/target
+
+# Bridge / pipeline build artifacts
+/build
+/coreir
+*.coreir
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# Local discovery / coverage scratch
+/discovery_out
+registry_shim_coverage*.json
+
+# Logs
+*.log

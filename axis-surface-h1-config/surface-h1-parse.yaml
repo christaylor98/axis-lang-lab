@@ -1,0 +1,197 @@
+parser:
+  start: Program
+
+  grammar:
+    Program:
+      - Item*
+
+    Item:
+      - FnDecl
+      - ControllerDecl
+      - RunStmt
+      - Stmt
+
+    RunStmt:
+      - <KW_RUN> <IDENT> <PUNCT_;>
+
+    FnDecl:
+      - <KW_FN> <IDENT> <PUNCT_(> ParamList <PUNCT_)> Block
+
+    ParamList:
+      - Param ParamRest*
+      - Empty
+
+    ParamRest:
+      - <PUNCT_,> Param
+
+    Param:
+      - <IDENT>
+
+    ControllerDecl:
+      - <KW_CONTROLLER> <IDENT> <PUNCT_{> ControllerMember* <PUNCT_}>
+
+    ControllerMember:
+      - <KW_ON> EventSig <"PUNCT_=>"> Expr <PUNCT_,>
+
+    EventSig:
+      - <IDENT> <PUNCT_(> ParamList <PUNCT_)>
+
+    Block:
+      - <PUNCT_{> BlockContent <PUNCT_}>
+
+    BlockContent:
+      - Stmt* Expr
+      - Stmt*
+
+    Stmt:
+      - LetStmt
+      - IntentDirectiveStmt
+      - ExprStmt
+
+    LetStmt:
+      - <KW_LET> <IDENT> <PUNCT_=> Expr <PUNCT_;>
+
+    IntentDirectiveStmt:
+      - IntentDirective Terminator
+
+    Terminator:
+      - <PUNCT_;>
+
+    ExprStmt:
+      - Expr <PUNCT_;>
+
+    IntentDirective:
+      - <PUNCT_@> <KW_INTENT> <PUNCT_.> <IDENT>
+
+    Expr:
+      - IfExpr
+      - MatchExpr
+      - ForExpr
+      - WhileExpr
+      - LoopExpr
+      - SpawnExpr
+      - JoinExpr
+      - SendExpr
+      - RecvExpr
+      - ChannelExpr
+      - EqualityExpr
+
+    IfExpr:
+      - <KW_IF> Expr Block <KW_ELSE> Block
+
+    MatchExpr:
+      - <KW_MATCH> Expr <PUNCT_{> MatchArm+ <PUNCT_}>
+
+    MatchArm:
+      - Pattern <"PUNCT_=>"> Expr <PUNCT_,>
+
+    Pattern:
+      - <PUNCT__>
+      - Literal
+      - IdentPat
+      - CtorPat
+
+    IdentPat:
+      - <IDENT>
+
+    CtorPat:
+      - <IDENT> <PUNCT_(> PatList <PUNCT_)>
+
+    PatList:
+      - Pattern PatListRest*
+      - Empty
+
+    PatListRest:
+      - <PUNCT_,> Pattern
+
+    ForExpr:
+      - <KW_FOR> <IDENT> <KW_IN> Expr Block
+
+    WhileExpr:
+      - <KW_WHILE> Expr Block
+
+    LoopExpr:
+      - <KW_LOOP> Block
+
+    SpawnExpr:
+      - <KW_SPAWN> Block
+
+    JoinExpr:
+      - <KW_JOIN> Expr
+
+    ChannelExpr:
+      - <KW_CHANNEL> GenericArgs <PUNCT_(> <PUNCT_)>
+      - <KW_CHANNEL> <PUNCT_(> <PUNCT_)>
+
+    GenericArgs:
+      - <"PUNCT_<"> TypeName <"PUNCT_>">
+
+    TypeName:
+      - <IDENT>
+
+    SendExpr:
+      - <KW_SEND> <PUNCT_(> Expr <PUNCT_,> Expr <PUNCT_)>
+
+    RecvExpr:
+      - <KW_RECV> <PUNCT_(> Expr <PUNCT_)>
+
+    EqualityExpr:
+      - RelExpr EqualityOp*
+
+    EqualityOp:
+      - <PUNCT_==> RelExpr
+      - <PUNCT_!=> RelExpr
+
+    RelExpr:
+      - AddExpr RelOp*
+
+    RelOp:
+      - <PUNCT_<=> AddExpr
+      - <"PUNCT_>="> AddExpr
+      - <"PUNCT_<"> AddExpr
+      - <"PUNCT_>"> AddExpr
+
+    AddExpr:
+      - MulExpr AddOp*
+
+    AddOp:
+      - <PUNCT_+> MulExpr
+      - <PUNCT_-> MulExpr
+
+    MulExpr:
+      - UnaryExpr MulOp*
+
+    MulOp:
+      - <PUNCT_*> UnaryExpr
+      - <PUNCT_/> UnaryExpr
+
+    UnaryExpr:
+      - <PUNCT_-> UnaryExpr
+      - <PUNCT_!> UnaryExpr
+      - CallExpr
+
+    CallExpr:
+      - Primary CallSuffix*
+
+    CallSuffix:
+      - <PUNCT_(> ArgList <PUNCT_)>
+
+    ArgList:
+      - Expr ArgListRest*
+      - Empty
+
+    ArgListRest:
+      - <PUNCT_,> Expr
+
+    Primary:
+      - Literal
+      - <IDENT>
+      - Block
+      - <PUNCT_(> Expr <PUNCT_)>
+
+    Literal:
+      - <INT_LIT>
+      - <STRING_LIT>
+
+    Empty:
+      - 

@@ -1,0 +1,10 @@
+lexer:
+  charset: ascii
+  case_sensitive: true
+
+  whitespace:
+    pattern: "[ \\t\\n\\r]+"
+    skip: true
+
+  identifiers:
+    pattern: "[A-Za-z_][A-Za-z0-9_]*"

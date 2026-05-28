@@ -1,0 +1,9 @@
+// Test: while loop construct
+// This tests: WhileExpr desugaring target
+// Expected: Parses successfully, passes NF validation after desugaring
+
+fn countdown(n) {
+  while n {
+    n
+  }
+}

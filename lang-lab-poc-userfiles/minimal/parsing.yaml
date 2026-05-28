@@ -1,0 +1,6 @@
+parser:
+  start: UnitLit
+
+  grammar:
+    UnitLit:
+      - '<UNIT_LIT>'

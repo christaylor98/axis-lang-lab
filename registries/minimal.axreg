@@ -1,0 +1,5 @@
+registry minimal 0.1
+
+# Minimal Registry
+# Empty registry for basic compilation
+# No external operators required

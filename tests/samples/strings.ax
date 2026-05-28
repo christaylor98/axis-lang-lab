@@ -1,0 +1,4 @@
+fn strings() {
+    let s = "hello world";
+    let escaped = "quote: \" backslash: \\ newline: \\n";
+}

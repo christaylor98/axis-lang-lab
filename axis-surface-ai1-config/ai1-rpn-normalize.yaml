@@ -1,0 +1,210 @@
+# Semantic-Surface-AI-1 Normalization Rules
+# Version: 0.1
+# Target: NF Spec 0.1
+# Authority: Normalization Framework 0.1
+
+version: "0.1"
+target_nf_version: "0.1"
+description: "Normalization rules for Semantic-Surface-AI-1 (RPN/Postfix) to Normal Form"
+
+metadata:
+  surface: "ai1-rpn"
+  syntax_style: "postfix"
+  primary_transformations:
+    - "RPN stack evaluation to expression trees"
+    - "Node kind preservation (AI1 CST already uses NF node names)"
+  complexity: "medium"
+  notes:
+    - "AI1 postfix reduction creates CST nodes with NF-compatible names"
+    - "Similar to Surface-0 but with cleaner CST structure"
+    - "Main work is ensuring proper field mapping from CST to NF AST"
+
+# Normalization strategy: AI1 produces expression trees via postfix reduction,
+# so normalization is primarily identity mappings with field restructuring.
+rule_order:
+  - normalize_int_lit
+  - normalize_bool_lit
+  - normalize_unit_lit
+  - normalize_var_ref
+  - normalize_let_expr
+  - normalize_lam_expr
+  - normalize_if_expr
+  - normalize_app_expr
+
+rules:
+  # Integer literal: IntLit(token:INT_LIT) → NfIntLit(value:INT_LIT)
+  normalize_int_lit:
+    description: "Map IntLit CST node to NF IntLit"
+    pattern:
+      node_kind: "IntLit"
+      fields:
+        value: { exists: true, is_token: true }
+    replacement:
+      nf_node: "IntLit"
+      nf_fields:
+        value: { from: "token:value" }
+    constraints:
+      - "value must be valid integer token"
+    notes:
+      - "Direct mapping - AI1 CST already structured correctly"
+
+  # Boolean literal: BoolLit(token:BOOL_LIT) → NfBoolLit(value:BOOL_LIT)
+  normalize_bool_lit:
+    description: "Map BoolLit CST node to NF BoolLit"
+    pattern:
+      node_kind: "BoolLit"
+      fields:
+        value: { exists: true, is_token: true }
+    replacement:
+      nf_node: "BoolLit"
+      nf_fields:
+        value: { from: "token:value" }
+    constraints:
+      - "value must be 'true' or 'false'"
+    notes:
+      - "Direct mapping - AI1 CST already structured correctly"
+
+  # Unit literal: UnitLit(token:UNIT_LIT) → NfUnitLit(value:UNIT_LIT)
+  normalize_unit_lit:
+    description: "Map UnitLit CST node to NF UnitLit"
+    pattern:
+      node_kind: "UnitLit"
+      fields:
+        value: { exists: true, is_token: true }
+    replacement:
+      nf_node: "UnitLit"
+      nf_fields:
+        value: { from: "token:value" }
+    constraints:
+      - "value must be unit literal"
+    notes:
+      - "Direct mapping - AI1 CST already structured correctly"
+
+  # Variable reference: VarRef(token:IDENT) → NfVarRef(name:IDENT)
+  normalize_var_ref:
+    description: "Map VarRef CST node to NF VarRef"
+    pattern:
+      node_kind: "VarRef"
+      fields:
+        name: { exists: true, is_token: true }
+    replacement:
+      nf_node: "VarRef"
+      nf_fields:
+        name: { from: "token:name" }
+    constraints:
+      - "name must be valid identifier"
+    notes:
+      - "Direct mapping - AI1 CST already structured correctly"
+
+  # Let expression: LetExpr(name, value, body) → NfLetExpr(name, value, body)
+  normalize_let_expr:
+    description: "Map LetExpr CST node to NF LetExpr with recursive normalization"
+    pattern:
+      node_kind: "LetExpr"
+      fields:
+        name: { exists: true, is_token: true }
+        value: { exists: true, is_node: true }
+        body: { exists: true, is_node: true }
+    replacement:
+      nf_node: "LetExpr"
+      nf_fields:
+        name: { from: "token:name" }
+        value: { from: "node:value", recurse: true }
+        body: { from: "node:body", recurse: true }
+    constraints:
+      - "value must normalize"
+      - "body must normalize"
+    notes:
+      - "Recursively normalize value and body subexpressions"
+      - "AI1 postfix reduction already creates correct structure"
+
+  # Lambda abstraction: LamExpr(param, body) → NfLamExpr(param, body)
+  normalize_lam_expr:
+    description: "Map LamExpr CST node to NF LamExpr with recursive normalization"
+    pattern:
+      node_kind: "LamExpr"
+      fields:
+        param: { exists: true, is_token: true }
+        body: { exists: true, is_node: true }
+    replacement:
+      nf_node: "LamExpr"
+      nf_fields:
+        param: { from: "token:param" }
+        body: { from: "node:body", recurse: true }
+    constraints:
+      - "body must normalize"
+    notes:
+      - "Recursively normalize body"
+      - "Single parameter only (curried form)"
+
+  # If expression: IfExpr(condition, then_branch, else_branch) → NfIfExpr(...)
+  normalize_if_expr:
+    description: "Map IfExpr CST node to NF IfExpr with recursive normalization"
+    pattern:
+      node_kind: "IfExpr"
+      fields:
+        condition: { exists: true, is_node: true }
+        then_branch: { exists: true, is_node: true }
+        else_branch: { exists: true, is_node: true }
+    replacement:
+      nf_node: "IfExpr"
+      nf_fields:
+        condition: { from: "node:condition", recurse: true }
+        then_branch: { from: "node:then_branch", recurse: true }
+        else_branch: { from: "node:else_branch", recurse: true }
+    constraints:
+      - "condition must normalize"
+      - "then_branch must normalize"
+      - "else_branch must normalize"
+    notes:
+      - "Recursively normalize all three branches"
+      - "AI1 postfix creates correct 3-child structure"
+
+  # Application: AppExpr(fn, arg) → NfAppExpr(fn, arg)
+  normalize_app_expr:
+    description: "Map AppExpr CST node to NF AppExpr with recursive normalization"
+    pattern:
+      node_kind: "AppExpr"
+      fields:
+        parts: { exists: true, is_children: true }
+    replacement:
+      nf_node: "AppExpr"
+      nf_fields:
+        fn: { from: "children:parts[0]", recurse: true }
+        arg: { from: "children:parts[1]", recurse: true }
+    constraints:
+      - "parts must have exactly 2 children"
+      - "fn must normalize"
+      - "arg must normalize"
+    notes:
+      - "AI1 AppExpr uses 'parts' field (children)"
+      - "NF AppExpr expects 'fn' and 'arg' fields"
+      - "Extract first child as fn, second as arg"
+      - "Recursively normalize both"
+
+# Error handling
+error_conditions:
+  - condition: "unknown_node_kind"
+    message: "AI1 CST node kind not recognized in normalization rules"
+    action: "reject"
+  
+  - condition: "missing_required_field"
+    message: "Required field missing from CST node"
+    action: "reject"
+  
+  - condition: "normalization_recursion_failed"
+    message: "Child expression failed to normalize"
+    action: "reject"
+
+# Validation
+validation:
+  post_normalization:
+    - "All nodes must be NF node kinds (IntLit, BoolLit, UnitLit, VarRef, LetExpr, LamExpr, IfExpr, AppExpr)"
+    - "All tokens preserved with correct field names"
+    - "All child expressions recursively normalized"
+    - "No CST-specific structures remaining"
+  
+  invariants:
+    - "Node structure preserved (same tree shape)"
+    - "Semantic equivalence maintained"
+    - "All variable bindings preserved"

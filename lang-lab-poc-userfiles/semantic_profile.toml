@@ -1,0 +1,11 @@
+[semantics]
+immutability = true
+explicit_projection_only = true
+flat_identifiers = true
+no_modules = true
+no_imports = true
+
+[semantics.constraints]
+no_field_access = true
+no_implicit_destructuring = true
+no_rebinding = true

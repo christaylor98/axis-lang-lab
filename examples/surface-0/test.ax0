@@ -1,0 +1,9 @@
+fn demo.compute
+arg 1
+arg 2
+call core.math.mul
+arg 0
+call core.math.add
+arg 3
+call core.math.sub
+end

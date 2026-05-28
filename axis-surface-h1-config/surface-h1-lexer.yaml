@@ -1,0 +1,75 @@
+lexer:
+  charset: ascii
+  case_sensitive: true
+
+  whitespace:
+    pattern: "[ \\t\\n\\r]+"
+    skip: true
+
+  comments:
+    - pattern: "//[^\\n]*"
+      skip: true
+    - pattern: "/\\*([^*]|\\*+[^*/])*\\*+/"
+      skip: true
+
+  keywords:
+    - let
+    - fn
+    - if
+    - else
+    - loop
+    - while
+    - for
+    - in
+    - match
+    - spawn
+    - join
+    - channel
+    - send
+    - recv
+    - controller
+    - on
+    - run
+    - intent
+
+  identifiers:
+    pattern: "[A-Za-z_][A-Za-z0-9_]*"
+    forbid:
+      - async
+      - await
+
+  literals:
+    int:
+      pattern: "[0-9]+"
+      base: 10
+    string:
+      delimiter: "\""
+      escapes: ["\\\"", "\\\\", "\\n", "\\t", "\\r"]
+      forbid_newlines: false
+
+  punctuation:
+    - "("
+    - ")"
+    - "{"
+    - "}"
+    - "["
+    - "]"
+    - ","
+    - ";"
+    - ":"
+    - "."
+    - "@"
+    - "<"
+    - ">"
+    - "="
+    - "=>"
+    - "=="
+    - "!="
+    - "<="
+    - ">="
+    - "+"
+    - "-"
+    - "*"
+    - "/"
+    - "!"
+    - "_"

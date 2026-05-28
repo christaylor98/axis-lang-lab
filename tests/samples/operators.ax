@@ -1,0 +1,5 @@
+fn operators() {
+    let arrow = ->;
+    let fat_arrow = =>;
+    comma_test(a, b, c);
+}

@@ -1,0 +1,11 @@
+// Test 2: Function call
+// This tests: FnDecl, CallExpr, application
+
+fn inc() {
+  1
+}
+
+fn main() {
+  inc()
+}
+

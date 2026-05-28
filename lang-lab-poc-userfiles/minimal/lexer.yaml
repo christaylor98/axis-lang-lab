@@ -1,0 +1,16 @@
+lexer:
+  charset: ascii
+  case_sensitive: true
+
+  whitespace:
+    pattern: "[ \\t\\n\\r]+"
+    skip: true
+
+  literals:
+    unit:
+      literal: "()"
+      single_token: true
+
+  punctuation:
+    - "("
+    - ")"

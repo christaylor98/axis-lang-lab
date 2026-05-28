@@ -1,0 +1,68 @@
+# AI2 Schema AST
+# Maps named-field CST to Schema AST
+# CST node names (from parser) -> Schema AST node names (for lowering)
+
+nodes:
+  # Top-level wrapper (always present at root)
+  Expr:
+    fields:
+      inner:
+        from: child(0)
+
+  # let(name = <id>, value = <expr>, body = <expr>)
+  LetExpr:
+    fields:
+      name:
+        from: child_token(4)
+      value:
+        from: child(8)
+      body:
+        from: child(12)
+
+  # lam(param = <id>, body = <expr>)
+  LamExpr:
+    fields:
+      param:
+        from: child_token(4)
+      body:
+        from: child(8)
+
+  # app(fn = <expr>, arg = <expr>)
+  AppExpr:
+    fields:
+      fn:
+        from: child(4)
+      arg:
+        from: child(8)
+
+  # if(cond = <expr>, then = <expr>, else = <expr>)
+  IfExpr:
+    fields:
+      condition:
+        from: child(4)
+      then_branch:
+        from: child(8)
+      else_branch:
+        from: child(12)
+
+  # var(name = <id>)
+  VarRef:
+    fields:
+      name:
+        from: child_token(4)
+
+  # int(value = <int>)
+  IntLit:
+    fields:
+      value:
+        from: token(INT_LIT)
+
+  # bool(value = true|false)
+  BoolLit:
+    fields:
+      value:
+        from: child(4)
+
+  # unit()
+  UnitLit:
+    fields: {}

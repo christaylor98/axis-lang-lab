@@ -1,0 +1,9 @@
+{
+  "version": "0.3",
+  "core_term": {
+    "kind": "CIntLit",
+    "value": 42,
+    "node_id": null,
+    "annotations": []
+  }
+}

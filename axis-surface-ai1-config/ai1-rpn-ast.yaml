@@ -1,0 +1,82 @@
+# Semantic-Surface-AI-1 AST Schema Specification (RPN/Postfix)
+# Version: Wave AI1
+# Status: INITIAL
+# Authority: Wave AI1 Execution Prompt
+
+# AI-1 postfix reduction produces CST nodes with the SAME names as Semantic-Surface-0:
+# IntLit, BoolLit, UnitLit, VarRef, LetExpr, LamExpr, IfExpr, AppExpr
+#
+# This schema maps those CST nodes to Schema AST nodes.
+# The structure mirrors semantic-surface-0-ast.yaml because the CST node names match.
+
+nodes:
+  # Integer literal: produced by postfix reduction from INT token
+  IntLit:
+    match: "IntLit"
+    fields:
+      value:
+        from: "child_token(0)"
+  
+  # Boolean literal: produced by postfix reduction from true/false
+  BoolLit:
+    match: "BoolLit"
+    fields:
+      value:
+        from: "child_token(0)"
+  
+  # Unit literal: produced by postfix reduction from unit keyword
+  UnitLit:
+    match: "UnitLit"
+    fields:
+      value:
+        from: "child_token(0)"
+  
+  # Variable reference: produced by postfix reduction from IDENT token
+  VarRef:
+    match: "VarRef"
+    fields:
+      name:
+        from: "child_token(0)"
+  
+  # Let binding: produced by postfix reduction from "let IDENT" operator
+  # Postfix reduction creates: LetExpr with name token, value child, body child
+  LetExpr:
+    match: "LetExpr"
+    fields:
+      name:
+        from: "child_token(0)"
+      value:
+        from: "child(1)"  # Second child is value
+      body:
+        from: "child(2)"  # Third child is body
+  
+  # Lambda abstraction: produced by postfix reduction from "lam IDENT" operator
+  # Postfix reduction creates: LamExpr with param token, body child
+  LamExpr:
+    match: "LamExpr"
+    fields:
+      param:
+        from: "child_token(0)"
+      body:
+        from: "child(1)"  # Second child is body
+  
+  # Conditional: produced by postfix reduction from "if" operator
+  # Postfix reduction creates: IfExpr with condition, then_branch, else_branch children
+  IfExpr:
+    match: "IfExpr"
+    fields:
+      condition:
+        from: "child(0)"  # First child is condition
+      then_branch:
+        from: "child(1)"  # Second child is then_branch
+      else_branch:
+        from: "child(2)"  # Third child is else_branch
+  
+  # Application: produced by postfix reduction from "app" operator
+  # Postfix reduction creates: AppExpr with fn child and arg child
+  # NOTE: Semantic-Surface-0 lowering expects "parts" field (children(0..))
+  AppExpr:
+    match: "AppExpr"
+    fields:
+      parts:
+        from: "children(0..)"  # All children for lowering compatibility

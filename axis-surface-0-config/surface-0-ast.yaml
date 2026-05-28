@@ -1,0 +1,75 @@
+# Wave 3: Schema Normalization (Loader-Compatible AST)
+# CST source of truth: WAVE3_CST_SHAPE_FREEZE.md
+#
+# This schema maps CST structure to AST using only supported syntax:
+# - child(N): extract child at index N (node or terminal)
+# - children(A..B): extract children from A (inclusive) to B (exclusive)
+# - children(N..): extract all children from N to end
+# - token(KIND): extract first token of KIND
+# - tokens(KIND): extract all tokens of KIND
+#
+# CRITICAL: children() extracts ONLY non-terminal nodes
+# If terminals appear in children() range, projection WILL FAIL
+# Use token() or tokens() to extract terminals explicitly
+
+nodes:
+  # Program: Decl+
+  # CST: children(0..) → all Decl nodes
+  Program:
+    fields:
+      decls:
+        from: children(0..)
+
+  # Decl: Function
+  # CST: child(0) → Function node
+  Decl:
+    fields:
+      func:
+        from: child(0)
+
+  # Function: kw:"fn" <IDENT> Instruction+ kw:"end"
+  # CST structure from parser:
+  #   child(0) = Terminal("fn")
+  #   child(1) = Terminal(IDENT)
+  #   child(2..N-1) = Rule(Instruction) nodes (one or more)
+  #   child(N) = Terminal("end")
+  # 
+  # SCHEMA-EXACT EXTRACTION:
+  # - name: token(IDENT) searches all children for IDENT token
+  # - body: children_excluding_last(2) extracts children [2..len-1], excluding "end"
+  Function:
+    fields:
+      name:
+        from: token(IDENT)
+      body:
+        from: children_excluding_last(2)
+
+  # Instruction: Arg | Lit | Call
+  # CST: child(0) → variant (one of Arg/Lit/Call node)
+  Instruction:
+    fields:
+      variant:
+        from: child(0)
+
+  # Arg: kw:"arg" <INT>
+  # CST: child(0)="arg", child(1)=INT
+  Arg:
+    fields:
+      index:
+        from: token(INT_LIT)
+
+  # Lit: kw:"lit" <IDENT> <INT>
+  # CST: child(0)="lit", child(1)=IDENT, child(2)=INT
+  Lit:
+    fields:
+      type_name:
+        from: token(IDENT)
+      value:
+        from: token(INT_LIT)
+
+  # Call: kw:"call" <IDENT>
+  # CST: child(0)="call", child(1)=IDENT
+  Call:
+    fields:
+      operation:
+        from: token(IDENT)

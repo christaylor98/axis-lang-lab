@@ -1,0 +1,13 @@
+// Test 3: Conditional with let binding
+// This tests: IfExpr, LetStmt, variable reference
+// NOTE: Loop/intent tests are BLOCKED - Core IR 0.2 has no loop primitive
+
+fn main() {
+  let x = 1;
+  if x {
+    2
+  } else {
+    3
+  }
+}
+

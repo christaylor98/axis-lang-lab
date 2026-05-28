@@ -1,0 +1,95 @@
+# Semantic-Surface-0 AST Schema Specification
+# Version: Wave S1
+# Status: INITIAL
+# Authority: SEMANTIC-SURFACE-0-DEFINITION.md
+
+# Schema nodes map 1:1 to semantic constructs
+# CST → AST projection is mechanical (no interpretation)
+
+nodes:
+  # Integer literal: <INT>
+  IntLit:
+    match: "IntLit"
+    fields:
+      value:
+        from: "token(INT_LIT)"
+  
+  # Boolean literal: kw:"true" | kw:"false"
+  BoolLit:
+    match: "BoolLit"
+    fields:
+      value:
+        from: "token(BOOL_LIT)"
+  
+  # Unit literal: <UNIT>
+  UnitLit:
+    match: "UnitLit"
+    fields:
+      value:
+        from: "token(UNIT_LIT)"
+  
+  # Variable reference: <IDENT>
+  VarRef:
+    match: "VarRef"
+    fields:
+      name:
+        from: "token(IDENT)"
+  
+  # Let binding: let <name> = <expr> in <body>
+  # CST: [kw:let, IDENT, punct:=, Expr, kw:in, Expr]
+  LetExpr:
+    match: "LetExpr"
+    fields:
+      name:
+        from: "token(IDENT)"
+      value:
+        from: "child(3)"  # First Expr (after =)
+      body:
+        from: "child(5)"  # Second Expr (after in)
+  
+  # Lambda abstraction: fn <param> => <body>
+  # CST: [kw:fn, IDENT, punct:=>, Expr]
+  LamExpr:
+    match: "LamExpr"
+    fields:
+      param:
+        from: "token(IDENT)"
+      body:
+        from: "child(3)"  # Expr after =>
+  
+  # Conditional: if <cond> then <t> else <f>
+  # CST: [kw:if, Expr, kw:then, Expr, kw:else, Expr]
+  IfExpr:
+    match: "IfExpr"
+    fields:
+      condition:
+        from: "child(1)"  # First Expr (after if)
+      then_branch:
+        from: "child(3)"  # Second Expr (after then)
+      else_branch:
+        from: "child(5)"  # Third Expr (after else)
+  
+  # Application chain: AtomicExpr (punct:"(" Expr punct:")")*
+  # CST for f(x): [AtomicExpr, "(", Expr, ")"]
+  # CST for f(x)(y): [AtomicExpr, "(", Expr, ")", "(", Expr, ")"]
+  # Schema children(0..) extracts: [AtomicExpr, Expr, Expr, ...]
+  # First child is function, rest are arguments (left-to-right application)
+  AppExpr:
+    match: "AppExpr"
+    fields:
+      parts:
+        from: "children(0..)"  # All nodes: [base_expr, arg1, arg2, ...]
+  
+  # Atomic expressions (wrapper nodes)
+  AtomicExpr:
+    match: "AtomicExpr"
+    fields:
+      inner:
+        from: "child(0)"  # The actual literal/varref/parenthesized expr
+  
+  # Top-level expression (wrapper node)
+  Expr:
+    match: "Expr"
+    fields:
+      inner:
+        from: "child(0)"  # The actual expr variant

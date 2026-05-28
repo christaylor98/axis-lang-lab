@@ -1,0 +1,7 @@
+// Test 1: Single function returning literal
+// This tests: FnDecl, Block, Literal
+
+fn main() {
+  1
+}
+

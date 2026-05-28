@@ -1,0 +1,117 @@
+# Semantic-Surface-0 Normalization Rules
+# Surface: semantic-surface-0 (human-readable expression syntax)
+# Target NF Version: 0.1
+# Description: Semantic-surface-0 is already close to NF - only needs wrapper unwrapping
+
+version: "0.1"
+target_nf_version: "0.1"
+description: "Normalization rules for Semantic-Surface-0 (human-readable expression syntax)"
+
+# Semantic-surface-0 is already in NF except for wrapper nodes (Expr, AtomicExpr)
+# Normalization is mostly identity + transparent unwrapping
+
+strategy:
+  application_order: "sequential"
+  traversal_order: "bottom_up"
+  default_behavior: "fail_loud"
+  failure_mode: "fail_loud"
+
+rule_order:
+  - "unwrap_expr"
+  - "unwrap_atomic_expr"
+  - "unwrap_single_element_app"
+  - "identity_nf_nodes"
+
+rules:
+  # ═══════════════════════════════════════════════════════════════════════
+  # WRAPPER UNWRAPPING
+  # ═══════════════════════════════════════════════════════════════════════
+
+  unwrap_expr:
+    description: "Unwrap Expr wrapper to access inner expression"
+    pattern:
+      node_kind: "Expr"
+      fields:
+        inner: { exists: true, is_node: true }
+    replacement:
+      nf_node: "transparent"
+      nf_fields:
+        inner: { from: "node:inner", recurse: true }
+    constraints: []
+
+  unwrap_atomic_expr:
+    description: "Unwrap AtomicExpr wrapper to access inner expression"
+    pattern:
+      node_kind: "AtomicExpr"
+      fields:
+        inner: { exists: true, is_node: true }
+    replacement:
+      nf_node: "transparent"
+      nf_fields:
+        inner: { from: "node:inner", recurse: true }
+    constraints: []
+
+  unwrap_single_element_app:
+    description: "Unwrap AppExpr with single element (no actual application)"
+    pattern:
+      node_kind: "AppExpr"
+      fields:
+        parts: { exists: true, is_list: true, min_length: 1, max_length: 1 }
+    replacement:
+      nf_node: "extract_first_element"
+      nf_fields:
+        parts: { from: "nodes:parts", recurse: true }
+      strategy: "unwrap_single_list_element"
+    constraints:
+      - "parts list must have exactly 1 element"
+    notes:
+      - "AppExpr with no applications is just the base expression"
+      - "AppExpr { parts: [expr] } → expr"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # IDENTITY RULES
+  # ═══════════════════════════════════════════════════════════════════════
+
+  identity_nf_nodes:
+    description: "Pass through already-NF nodes including binary AppExpr"
+    pattern:
+      node_kind_matches:
+        - "IntLit"
+        - "BoolLit"
+        - "UnitLit"
+        - "VarRef"
+        - "LetExpr"
+        - "LamExpr"
+        - "AppExpr"
+        - "IfExpr"
+        - "CallExpr"
+    replacement:
+      nf_node: "identity"
+      nf_fields: "preserve_all"
+    constraints: []
+
+# Post-normalization validation
+post_normalization:
+  validation_required: true
+  validation_spec: "NORMAL_FORM_SPEC_0.1.yaml"
+  failure_mode: "block_lowering"
+
+# Example transformations
+examples:
+  - description: "Simple integer literal"
+    semantic_surface_0: "42"
+    normalized_nf: "IntLit(42)"
+    
+  - description: "Let binding"
+    semantic_surface_0: "let x = 42 in x"
+    normalized_nf: "LetExpr { name: 'x', value: IntLit(42), body: VarRef('x') }"
+    
+  - description: "Lambda"
+    semantic_surface_0: "fn x => x"
+    normalized_nf: "LamExpr { param: 'x', body: VarRef('x') }"
+
+notes:
+  - "Semantic-surface-0 is already NF-like"
+  - "Only wrapper nodes (Expr, AtomicExpr) need unwrapping"
+  - "All other nodes pass through unchanged"
+  - "This is the simplest normalization"

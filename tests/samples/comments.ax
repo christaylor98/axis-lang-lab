@@ -1,0 +1,6 @@
+// This is a comment
+fn test() {
+    // Another comment
+    let x = 123; // inline comment
+}
+// Final comment

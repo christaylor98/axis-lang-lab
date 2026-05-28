@@ -1,0 +1,47 @@
+# Semantic-Surface-AI-1 Lexer Specification (RPN/Postfix)
+# Version: Wave AI1
+# Status: INITIAL
+# Authority: Wave AI1 Execution Prompt
+
+lexer:
+  # Character set: ASCII only for simplicity
+  charset: "ascii"
+  
+  # Case sensitivity: enabled
+  case_sensitive: true
+  
+  # Whitespace: skip all standard whitespace
+  whitespace:
+    pattern: "[ \\t\\n\\r]+"
+    skip: true
+  
+  # Comments: line comments starting with //
+  comments:
+    - pattern: "//.*"
+      skip: true
+  
+  # Keywords: RPN operators and literals
+  keywords:
+    - "app"      # Application operator (postfix)
+    - "lam"      # Lambda operator (postfix, followed by IDENT)
+    - "let"      # Let operator (postfix, followed by IDENT)
+    - "if"       # If operator (postfix)
+    - "true"     # Boolean literal
+    - "false"    # Boolean literal
+    - "unit"     # Unit literal
+  
+  # Identifiers: standard alphanumeric + underscore, must start with letter or underscore
+  identifiers:
+    pattern: "[a-zA-Z_][a-zA-Z0-9_]*"
+    forbid: []
+  
+  # Literals
+  literals:
+    # Integer literals: decimal only, signed allowed
+    int:
+      pattern: "-?[0-9]+"
+      base: 10
+  
+  # Punctuation: FORBIDDEN - no parentheses or other operators
+  # AI-1 is purely whitespace-separated postfix notation
+  punctuation: []

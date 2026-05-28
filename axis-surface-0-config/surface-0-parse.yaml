@@ -1,0 +1,26 @@
+parser:
+  start: Program
+
+  grammar:
+    Program:
+      - Decl+
+
+    Decl:
+      - Function
+
+    Function:
+      - <KW_FN> <IDENT> Instruction+ <KW_END>
+
+    Instruction:
+      - Arg
+      - Lit
+      - Call
+
+    Arg:
+      - <KW_ARG> <INT>
+
+    Lit:
+      - <KW_LIT> <IDENT> <INT>
+
+    Call:
+      - <KW_CALL> <IDENT>

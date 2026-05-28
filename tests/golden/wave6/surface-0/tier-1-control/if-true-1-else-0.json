@@ -1,0 +1,26 @@
+{
+  "version": "0.3",
+  "core_term": {
+    "kind": "CIf",
+    "cond": {
+      "kind": "CBoolLit",
+      "value": true,
+      "node_id": null,
+      "annotations": []
+    },
+    "then_branch": {
+      "kind": "CIntLit",
+      "value": 1,
+      "node_id": null,
+      "annotations": []
+    },
+    "else_branch": {
+      "kind": "CIntLit",
+      "value": 0,
+      "node_id": null,
+      "annotations": []
+    },
+    "node_id": null,
+    "annotations": []
+  }
+}

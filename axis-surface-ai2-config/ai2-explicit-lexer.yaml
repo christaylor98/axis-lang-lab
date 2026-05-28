@@ -1,0 +1,53 @@
+# AI-Primary Explicit Prefix Surface — Lexer Specification
+# Version: 0.1
+#
+# Design goals:
+# - Deterministic tokenization
+# - Explicit structure
+# - No inference
+# - Fail-fast on invalid input
+
+lexer:
+  charset: "ascii"
+  case_sensitive: true
+
+  # Whitespace: skip all standard whitespace
+  whitespace:
+    pattern: "[ \\t\\n\\r]+"
+    skip: true
+
+  # Comments: line comments starting with //
+  comments:
+    - pattern: "//.*"
+      skip: true
+
+  # Keywords: construct names (must match before identifiers)
+  keywords:
+    - "let"
+    - "lam"
+    - "app"
+    - "if"
+    - "var"
+    - "int"
+    - "bool"
+    - "unit"
+    - "true"
+    - "false"
+
+  # Identifiers: alphanumeric + underscore
+  identifiers:
+    pattern: "[a-zA-Z_][a-zA-Z0-9_]*"
+    forbid: []
+
+  # Literals
+  literals:
+    int:
+      pattern: "-?[0-9]+"
+      base: 10
+
+  # Punctuation: delimiters and separators
+  punctuation:
+    - "("
+    - ")"
+    - ","
+    - "="

@@ -1,0 +1,19 @@
+// Surface-0 core arithmetic registry
+
+fn core.math.add
+  arity 2
+  deterministic true
+  profile surface-0
+end
+
+fn core.math.mul
+  arity 2
+  deterministic true
+  profile surface-0
+end
+
+fn core.math.sub
+  arity 2
+  deterministic true
+  profile surface-0
+end

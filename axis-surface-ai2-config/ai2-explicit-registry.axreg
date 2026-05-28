@@ -1,0 +1,5 @@
+registry ai2-explicit 0.1
+
+# AI2 Explicit Registry
+# Empty registry for pure expression evaluation
+# No external operators required

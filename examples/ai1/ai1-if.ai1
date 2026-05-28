@@ -1,0 +1,9 @@
+// AI-1 (RPN/Postfix) conditional test
+// Surface-0 equivalent: if true then 1 else 0
+//
+// Postfix stack execution:
+// 1. Push true
+// 2. Push 1
+// 3. Push 0
+// 4. if pops: 0 (else), 1 (then), true (cond) -> pushes If(true, 1, 0)
+true 1 0 if

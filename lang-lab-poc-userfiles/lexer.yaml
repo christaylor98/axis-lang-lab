@@ -1,0 +1,59 @@
+lexer:
+  charset: ascii
+  case_sensitive: true
+
+  whitespace:
+    pattern: "[ \\t\\n\\r]+"
+    skip: true
+
+  comments:
+    - pattern: "//.*"
+      skip: true
+
+  keywords:
+    - fn
+    - let
+    - if
+    - else
+    - match
+    - enum
+    - proj
+
+  identifiers:
+    pattern: "[A-Za-z_][A-Za-z0-9_]*"
+    forbid:
+      - "."
+
+  literals:
+    int:
+      pattern: "[0-9]+"
+      base: 10
+
+    bool:
+      values: ["true", "false"]
+
+    unit:
+      literal: "()"
+      single_token: true
+
+    string:
+      delimiter: "\""
+      escapes:
+        - "\\\""
+        - "\\\\"
+        - "\\n"
+        - "\\t"
+      forbid_newlines: true
+
+  punctuation:
+    - "{"
+    - "}"
+    - "("
+    - ")"
+    - ","
+    - ":"
+    - "=>"
+    - "->"
+    - "="
+    - ";"
+    - "|"

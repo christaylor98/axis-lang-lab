@@ -1,0 +1,15 @@
+validator:
+  checks:
+    - intent_directive_validity
+    - no_async_await
+
+  invariants:
+    Program:
+      role: structural_only
+      executable: false
+
+    FnDecl:
+      executable: true
+
+    ControllerDecl:
+      executable: true

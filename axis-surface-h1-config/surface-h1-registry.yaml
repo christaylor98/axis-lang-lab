@@ -1,0 +1,96 @@
+registry:
+  operators:
+    - name: core.math.add
+      stack_pop: 2
+      stack_push: 1
+      core_ir_op: add
+
+    - name: core.math.sub
+      stack_pop: 2
+      stack_push: 1
+      core_ir_op: sub
+
+    - name: core.math.mul
+      stack_pop: 2
+      stack_push: 1
+      core_ir_op: mul
+
+    - name: core.math.div
+      stack_pop: 2
+      stack_push: 1
+      core_ir_op: div
+
+    - name: core.cmp.eq
+      stack_pop: 2
+      stack_push: 1
+      core_ir_op: eq
+
+    - name: core.cmp.ne
+      stack_pop: 2
+      stack_push: 1
+      core_ir_op: ne
+
+    - name: core.cmp.lt
+      stack_pop: 2
+      stack_push: 1
+      core_ir_op: lt
+
+    - name: core.cmp.le
+      stack_pop: 2
+      stack_push: 1
+      core_ir_op: le
+
+    - name: core.cmp.gt
+      stack_pop: 2
+      stack_push: 1
+      core_ir_op: gt
+
+    - name: core.cmp.ge
+      stack_pop: 2
+      stack_push: 1
+      core_ir_op: ge
+
+    - name: core.control.if
+      stack_pop: 3
+      stack_push: 1
+      core_ir_op: if
+
+    - name: core.control.loop
+      stack_pop: 1
+      stack_push: 1
+      core_ir_op: loop
+
+    - name: core.control.match
+      stack_pop: 2
+      stack_push: 1
+      core_ir_op: match
+
+    - name: core.concurrency.spawn
+      stack_pop: 1
+      stack_push: 1
+      core_ir_op: spawn
+
+    - name: core.concurrency.join
+      stack_pop: 1
+      stack_push: 1
+      core_ir_op: join
+
+    - name: core.concurrency.channel
+      stack_pop: 0
+      stack_push: 1
+      core_ir_op: channel
+
+    - name: core.concurrency.send
+      stack_pop: 2
+      stack_push: 0
+      core_ir_op: send
+
+    - name: core.concurrency.recv
+      stack_pop: 1
+      stack_push: 1
+      core_ir_op: recv
+
+  effectful_operations:
+    - print
+    - send
+    - recv

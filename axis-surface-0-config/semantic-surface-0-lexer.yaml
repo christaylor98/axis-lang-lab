@@ -1,0 +1,58 @@
+# Semantic-Surface-0 Lexer Specification
+# Version: Wave S1
+# Status: INITIAL
+# Authority: SEMANTIC-SURFACE-0-DEFINITION.md
+
+lexer:
+  # Character set: ASCII only for simplicity
+  charset: "ascii"
+  
+  # Case sensitivity: enabled
+  case_sensitive: true
+  
+  # Whitespace: skip all standard whitespace
+  whitespace:
+    pattern: "[ \\t\\n\\r]+"
+    skip: true
+  
+  # Comments: line comments starting with //
+  comments:
+    - pattern: "//.*"
+      skip: true
+  
+  # Keywords: exact set from Semantic-Surface-0
+  keywords:
+    - "let"
+    - "in"
+    - "fn"
+    - "if"
+    - "then"
+    - "else"
+  
+  # Identifiers: standard alphanumeric + underscore, must start with letter or underscore
+  identifiers:
+    pattern: "[a-zA-Z_][a-zA-Z0-9_]*"
+    forbid: []
+  
+  # Literals
+  literals:
+    # Integer literals: decimal only, signed allowed
+    int:
+      pattern: "-?[0-9]+"
+      base: 10
+    
+    # Boolean literals: true and false
+    bool:
+      values: ["true", "false"]
+    
+    # Unit literal
+    unit:
+      literal: "()"
+      single_token: true
+  
+  # Punctuation: all delimiters used in Semantic-Surface-0 grammar
+  punctuation:
+    - "("
+    - ")"
+    - "="
+    - "=>"

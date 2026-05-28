@@ -1,0 +1,4 @@
+// AI2 Test 5: Let expression
+// H1 equivalent: let x = 42 in x
+
+let(name = x, value = int(value = 42), body = var(name = x))

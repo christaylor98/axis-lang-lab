@@ -1,0 +1,16 @@
+// AI-1 (RPN/Postfix) application chain test
+// Surface-0 equivalent:
+//   let f = fn x => fn y => x in
+//   f(1)(2)
+//
+// Postfix stack execution:
+// 1. Push x (VarRef)
+// 2. lam y: pop x, push Lam(y, x)
+// 3. lam x: pop Lam(y, x), push Lam(x, Lam(y, x))
+// 4. Push f (VarRef)
+// 5. Push 1
+// 6. app: pop 1, pop f, push App(f, 1)
+// 7. Push 2
+// 8. app: pop 2, pop App(f, 1), push App(App(f, 1), 2)
+// 9. let f: pop App(App(f, 1), 2) (body), pop Lam(x, Lam(y, x)) (value), push Let(f, Lam(...), App(...))
+x lam y lam x f 1 app 2 app let f

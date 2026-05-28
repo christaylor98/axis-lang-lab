@@ -1,0 +1,4 @@
+// AI2 Test 3: Lambda expression
+// H1 equivalent: λx. x
+
+lam(param = x, body = var(name = x))

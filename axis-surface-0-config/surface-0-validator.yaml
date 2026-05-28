@@ -1,0 +1,15 @@
+validator:
+  checks:
+    - ascii_only
+    - no_comments
+    - line_oriented
+    - stack_safety
+    - operator_resolution
+
+  invariants:
+    Program:
+      role: structural_only
+      executable: false
+
+    Function:
+      executable: true

@@ -1,0 +1,3 @@
+// AI2 Test 8: Boolean literal (false)
+
+bool(value = false)

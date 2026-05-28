@@ -1,0 +1,9 @@
+// Test: for loop construct
+// This tests: ForExpr desugaring target
+// Expected: Parses successfully, fails NF validation
+
+fn count(n) {
+  for i in n {
+    i
+  }
+}

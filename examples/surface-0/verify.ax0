@@ -1,0 +1,5 @@
+fn verify.all
+arg 0
+lit i32 42
+call test.op
+end

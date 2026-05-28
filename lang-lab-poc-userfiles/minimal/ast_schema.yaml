@@ -1,0 +1,5 @@
+nodes:
+  UnitLit:
+    fields:
+      _token:
+        from: token(UNIT_LIT)

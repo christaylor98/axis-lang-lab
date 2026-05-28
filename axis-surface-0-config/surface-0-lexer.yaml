@@ -1,0 +1,26 @@
+lexer:
+  charset: ascii
+  case_sensitive: true
+
+  whitespace:
+    pattern: "[ \\t\\n\\r]+"
+    skip: true
+
+  comments: []
+
+  keywords:
+    - fn
+    - end
+    - arg
+    - lit
+    - call
+
+  identifiers:
+    pattern: "[A-Za-z_][A-Za-z0-9_.]*"
+
+  literals:
+    int:
+      pattern: "[0-9]+"
+      base: 10
+
+  punctuation: []

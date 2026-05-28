@@ -1,0 +1,422 @@
+# H1 Normalization Rules
+# Surface: surface-h1 (human-friendly syntax)
+# Target NF Version: 0.1
+# Description: Desugar H1 high-level constructs to NF
+
+version: "0.1"
+target_nf_version: "0.1"
+description: "Normalization rules for H1 human surface - extensive desugaring required"
+
+# H1 has many high-level constructs that must be desugared:
+# - Program/Item/FnDecl → flatten to expression
+# - Block → nested LetExpr
+# - LetStmt → LetExpr
+# - MatchExpr → nested IfExpr
+# - ForExpr → loop desugaring (registry call or recursive lambda)
+# - WhileExpr → loop desugaring
+# - Multiple statements → nested bindings
+
+strategy:
+  application_order: "sequential"
+  traversal_order: "bottom_up"
+  default_behavior: "fail_loud"  # H1 requires explicit rules
+  failure_mode: "fail_loud"
+
+rule_order:
+  # First: desugar high-level program structure
+  - "desugar_program"
+  - "desugar_item"
+  - "desugar_fn_decl"
+  
+  # Second: desugar blocks and statements
+  - "desugar_block"
+  - "desugar_block_content"
+  - "desugar_stmt"
+  - "desugar_let_stmt"
+  - "desugar_expr_stmt"
+  
+  # Third: desugar control flow
+  - "desugar_if_expr"
+  - "desugar_match_expr"
+  - "desugar_for_expr"
+  - "desugar_while_expr"
+  - "desugar_loop_expr"
+  
+  # Fourth: handle expression variants
+  - "unwrap_expr_variant"
+  
+  # Fifth: identity rules for NF-compliant nodes
+  - "identity_literals"
+  - "identity_variables"
+  - "identity_let_expr"
+  - "identity_lam_expr"
+  - "identity_app_expr"
+  - "identity_call_expr"
+
+rules:
+  # ═══════════════════════════════════════════════════════════════════════
+  # PROGRAM STRUCTURE DESUGARING
+  # ═══════════════════════════════════════════════════════════════════════
+  
+  desugar_program:
+    description: "Unwrap Program to single-item content (multi-item not supported)"
+    pattern:
+      node_kind: "Program"
+      fields:
+        items: { exists: true, is_list: true }
+    replacement:
+      nf_node: "unwrap_program_items"
+      nf_fields: "extract_single_item"
+    constraints:
+      - "exactly one item must exist (multi-item programs not supported in NF 0.1)"
+    notes:
+      - "Program wrapper is not NF - must be eliminated during normalization"
+      - "Multi-item programs require module system (deferred to future NF version)"
+
+  desugar_item:
+    description: "Unwrap Item variant to access inner declaration"
+    pattern:
+      node_kind: "Item"
+      fields:
+        variant: { exists: true, is_node: true }
+    replacement:
+      nf_node: "transparent"
+      nf_fields:
+        variant: { from: "node:variant", recurse: true }
+    constraints: []
+
+  desugar_fn_decl:
+    description: "Desugar FnDecl to lambda expression"
+    pattern:
+      node_kind: "FnDecl"
+      fields:
+        name: { exists: true, is_token: true }
+        params: { exists: true, is_node: true }
+        body: { exists: true, is_node: true }
+    replacement:
+      nf_node: "curry_lambda_from_params"
+      nf_fields:
+        params: { from: "node:params" }
+        body: { from: "node:body", recurse: true }
+      strategy: "build_curried_lambda_chain"
+    constraints:
+      - "params must be ParamList"
+      - "body must normalize to NF expression"
+    notes:
+      - "fn f(x, y) { body } → lam(x, lam(y, body))"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # BLOCK AND STATEMENT DESUGARING
+  # ═══════════════════════════════════════════════════════════════════════
+
+  desugar_block:
+    description: "Desugar Block to BlockContent"
+    pattern:
+      node_kind: "Block"
+      fields:
+        content: { exists: true, is_node: true }
+    replacement:
+      nf_node: "transparent"
+      nf_fields:
+        content: { from: "node:content", recurse: true }
+    constraints: []
+
+  desugar_block_content:
+    description: "Desugar BlockContent (statements) to nested LetExpr"
+    pattern:
+      node_kind: "BlockContent"
+      fields:
+        stmts: { exists: true, is_list: true }
+    replacement:
+      nf_node: "nest_statements_as_let"
+      nf_fields:
+        stmts: { from: "nodes:stmts", recurse: true }
+      strategy: "right_to_left_nesting"
+    constraints:
+      - "at least one statement must exist"
+    notes:
+      - "{ s1; s2; expr } → let _tmp1 = s1 in let _tmp2 = s2 in expr"
+      - "Last statement becomes body of innermost let"
+
+  desugar_stmt:
+    description: "Unwrap Stmt variant to access inner statement"
+    pattern:
+      node_kind: "Stmt"
+      fields:
+        variant: { exists: true, is_node: true }
+    replacement:
+      nf_node: "transparent"
+      nf_fields:
+        variant: { from: "node:variant", recurse: true }
+    constraints: []
+
+  desugar_let_stmt:
+    description: "Convert LetStmt to LetExpr (simplified - body from context)"
+    pattern:
+      node_kind: "LetStmt"
+      fields:
+        name: { exists: true, is_token: true }
+        value: { exists: true, is_node: true }
+    replacement:
+      nf_node: "LetExpr"
+      nf_fields: "extract_from_block_context"
+      strategy: "extract_body_from_block_context"
+    constraints:
+      - "value must normalize"
+    notes:
+      - "LetStmt requires surrounding BlockContent to provide body"
+      - "This is handled by desugar_block_content"
+
+  desugar_expr_stmt:
+    description: "Unwrap ExprStmt to access expression"
+    pattern:
+      node_kind: "ExprStmt"
+      fields:
+        expr: { exists: true, is_node: true }
+    replacement:
+      nf_node: "transparent"
+      nf_fields:
+        expr: { from: "node:expr", recurse: true }
+    constraints: []
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # CONTROL FLOW DESUGARING
+  # ═══════════════════════════════════════════════════════════════════════
+
+  desugar_if_expr:
+    description: "Desugar H1 IfExpr to NF IfExpr (blocks → expressions)"
+    pattern:
+      node_kind: "IfExpr"
+      fields:
+        condition: { exists: true, is_node: true }
+        then_block: { exists: true, is_node: true }
+        else_block: { exists: true, is_node: true }
+    replacement:
+      nf_node: "IfExpr"
+      nf_fields:
+        condition: { from: "node:condition", recurse: true }
+        then_branch: { from: "node:then_block", recurse: true }
+        else_branch: { from: "node:else_block", recurse: true }
+    constraints:
+      - "all branches must normalize"
+      - "blocks desugar to expressions via block rules"
+
+  desugar_match_expr:
+    description: "Desugar MatchExpr to nested IfExpr"
+    pattern:
+      node_kind: "MatchExpr"
+      fields:
+        scrutinee: { exists: true, is_node: true }
+        arms: { exists: true, is_list: true }
+    replacement:
+      nf_node: "nested_if_from_arms"
+      nf_fields:
+        scrutinee: { from: "node:scrutinee", recurse: true }
+        arms: { from: "nodes:arms" }
+      strategy: "build_nested_if_tree"
+    constraints:
+      - "at least one arm must exist"
+    notes:
+      - "match x { p1 => e1, p2 => e2 } → if (test p1 x) then e1 else (if (test p2 x) then e2 ...)"
+      - "Pattern matching requires runtime support or compile-time expansion"
+
+  desugar_for_expr:
+    description: "Desugar ForExpr to recursive lambda or registry call (complex synthesis)"
+    pattern:
+      node_kind: "ForExpr"
+      fields:
+        var: { exists: true, is_token: true }
+        iter: { exists: true, is_node: true }
+        body: { exists: true, is_node: true }
+    replacement:
+      nf_node: "CallExpr"
+      nf_fields: "synthesize_for_each_call"
+      strategy: "use_registry_for_each"
+    constraints:
+      - "iter must normalize"
+      - "body must normalize"
+    notes:
+      - "for x in iter { body } → call(for_each, iter, lam(x, body))"
+      - "Requires for_each in registry"
+      - "Complex synthesis creates: CallExpr(for_each, [iter, LamExpr(var, body)])"
+
+  desugar_while_expr:
+    description: "Desugar WhileExpr to recursive lambda"
+    pattern:
+      node_kind: "WhileExpr"
+      fields:
+        condition: { exists: true, is_node: true }
+        body: { exists: true, is_node: true }
+    replacement:
+      nf_node: "recursive_lambda"
+      nf_fields:
+        condition: { from: "node:condition", recurse: true }
+        body: { from: "node:body", recurse: true }
+      strategy: "build_recursive_while_loop"
+    constraints:
+      - "condition and body must normalize"
+    notes:
+      - "while cond { body } → (lam loop () if cond { body; loop() } else ())()"
+      - "Requires self-application or registry support"
+
+  desugar_loop_expr:
+    description: "Desugar infinite LoopExpr"
+    pattern:
+      node_kind: "LoopExpr"
+      fields:
+        body: { exists: true, is_node: true }
+    replacement:
+      nf_node: "infinite_recursive_lambda"
+      nf_fields:
+        body: { from: "node:body", recurse: true }
+      strategy: "build_infinite_loop"
+    constraints:
+      - "body must normalize"
+    notes:
+      - "loop { body } → (lam loop () { body; loop() })()"
+      - "Requires recursion support"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # EXPRESSION UNWRAPPING
+  # ═══════════════════════════════════════════════════════════════════════
+
+  unwrap_expr_variant:
+    description: "Unwrap Expr variant wrapper"
+    pattern:
+      node_kind: "Expr"
+      fields:
+        variant: { exists: true, is_node: true }
+    replacement:
+      nf_node: "transparent"
+      nf_fields:
+        variant: { from: "node:variant", recurse: true }
+    constraints: []
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # IDENTITY RULES (NF-compliant nodes)
+  # ═══════════════════════════════════════════════════════════════════════
+
+  identity_literals:
+    description: "Pass through literal nodes"
+    pattern:
+      node_kind_matches:
+        - "IntLit"
+        - "BoolLit"
+        - "UnitLit"
+        - "StringLit"
+    replacement:
+      nf_node: "identity"
+      nf_fields: "preserve_all"
+    constraints: []
+
+  identity_variables:
+    description: "Pass through variable references"
+    pattern:
+      node_kind_matches:
+        - "VarRef"
+        - "VarExpr"
+        - "IdentExpr"
+    replacement:
+      nf_node: "VarRef"
+      nf_fields: "preserve_all"
+    constraints: []
+
+  identity_let_expr:
+    description: "Pass through LetExpr (if already in NF form)"
+    pattern:
+      node_kind: "LetExpr"
+      fields:
+        name: { exists: true, is_token: true }
+        value: { exists: true, is_node: true }
+        body: { exists: true, is_node: true }
+    replacement:
+      nf_node: "identity"
+      nf_fields:
+        name: { from: "token:name" }
+        value: { from: "node:value", recurse: true }
+        body: { from: "node:body", recurse: true }
+    constraints: []
+
+  identity_lam_expr:
+    description: "Pass through LamExpr"
+    pattern:
+      node_kind: "LamExpr"
+      fields:
+        param: { exists: true, is_token: true }
+        body: { exists: true, is_node: true }
+    replacement:
+      nf_node: "identity"
+      nf_fields:
+        param: { from: "token:param" }
+        body: { from: "node:body", recurse: true }
+    constraints: []
+
+  identity_app_expr:
+    description: "Pass through AppExpr"
+    pattern:
+      node_kind: "AppExpr"
+      fields:
+        fn: { exists: true, is_node: true }
+        arg: { exists: true, is_node: true }
+    replacement:
+      nf_node: "identity"
+      nf_fields:
+        fn: { from: "node:fn", recurse: true }
+        arg: { from: "node:arg", recurse: true }
+    constraints: []
+
+  identity_call_expr:
+    description: "Pass through CallExpr"
+    pattern:
+      node_kind: "CallExpr"
+      fields:
+        name: { exists: true, is_token: true }
+        args: { exists: true, is_list: true }
+    replacement:
+      nf_node: "identity"
+      nf_fields:
+        name: { from: "token:name" }
+        args: { from: "nodes:args", recurse: true }
+    constraints: []
+
+# Fresh name generation
+fresh_name_strategy:
+  prefix: "_h1_tmp"
+  uniqueness: "position_based"
+  format: "{prefix}_{position}"
+  collision_handling: "fail_loud"
+
+# Error handling
+error_conditions:
+  - condition: "Unsupported H1 construct (controllers, events, etc.)"
+    action: "fail_with_unsupported_feature_error"
+  - condition: "Unknown node kind"
+    action: "fail_with_unknown_node_error"
+  - condition: "Missing required field"
+    action: "fail_with_missing_field_error"
+  - condition: "Child normalization fails"
+    action: "propagate_child_error"
+
+# Post-normalization validation
+post_normalization:
+  validation_required: true
+  validation_spec: "NORMAL_FORM_SPEC_0.1.yaml"
+  failure_mode: "block_lowering"
+
+# Unsupported features (TODO for future NF versions)
+unsupported_features:
+  - "ControllerDecl"
+  - "EventSig"
+  - "RunStmt"
+  - "SpawnExpr"
+  - "JoinExpr"
+  - "ChannelExpr"
+  - "Terminator (break/continue/return)"
+
+notes:
+  - "H1 requires extensive desugaring"
+  - "Multi-parameter functions → curried lambdas"
+  - "Blocks → nested LetExpr"
+  - "Match → nested IfExpr (simplified pattern matching)"
+  - "Loops → recursive lambdas or registry calls"
+  - "Controllers/events not yet supported in NF 0.1"

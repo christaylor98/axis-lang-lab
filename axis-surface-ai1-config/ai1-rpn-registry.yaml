@@ -1,0 +1,8 @@
+# AI1 RPN Registry
+# Empty registry for pure expression evaluation
+# No external operators required
+
+version: "0.1"
+
+registry:
+  operators: []

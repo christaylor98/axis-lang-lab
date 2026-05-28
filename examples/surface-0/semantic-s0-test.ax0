@@ -1,0 +1,5 @@
+// Semantic-Surface-0 test file
+// Application chain test
+
+let f = fn x => fn y => x in
+f(1)(2)

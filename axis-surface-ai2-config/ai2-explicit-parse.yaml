@@ -1,0 +1,62 @@
+# AI2 Parser Specification — Named Field Syntax
+# Version: 0.1
+# STATUS: TOKEN-KIND-ONLY (ENFORCED)
+# Enforces explicit named field syntax: construct(field = value, ...)
+#
+# ══════════════════════════════════════════════════════════════════════════
+# TOKEN-KIND-ONLY INVARIANT (HARD-ENFORCED)
+# ══════════════════════════════════════════════════════════════════════════
+#
+# VALID:   <KW_LET>, <PUNCT_(>, <IDENT>, <INT>
+# INVALID: "let", kw:"let", punct:"(", LET, PUNCT
+#
+# Parser matches token kinds only. No lexeme inspection.
+# ══════════════════════════════════════════════════════════════════════════
+
+parser:
+  start: Expr
+  
+  grammar:
+    # Top-level expression
+    Expr:
+      - LetExpr
+      - LamExpr
+      - AppExpr
+      - IfExpr
+      - VarRef
+      - IntLit
+      - BoolLit
+      - UnitLit
+
+    # let(name = <id>, value = <expr>, body = <expr>)
+    LetExpr:
+      - <KW_LET> <PUNCT_(> <IDENT> <PUNCT_=> <IDENT> <PUNCT_,> <IDENT> <PUNCT_=> Expr <PUNCT_,> <IDENT> <PUNCT_=> Expr <PUNCT_)>
+
+    # lam(param = <id>, body = <expr>)
+    LamExpr:
+      - <KW_LAM> <PUNCT_(> <IDENT> <PUNCT_=> <IDENT> <PUNCT_,> <IDENT> <PUNCT_=> Expr <PUNCT_)>
+
+    # app(fn = <expr>, arg = <expr>)
+    AppExpr:
+      - <KW_APP> <PUNCT_(> <IDENT> <PUNCT_=> Expr <PUNCT_,> <IDENT> <PUNCT_=> Expr <PUNCT_)>
+
+    # if(cond = <expr>, then = <expr>, else = <expr>)
+    IfExpr:
+      - <KW_IF> <PUNCT_(> <IDENT> <PUNCT_=> Expr <PUNCT_,> <IDENT> <PUNCT_=> Expr <PUNCT_,> <IDENT> <PUNCT_=> Expr <PUNCT_)>
+
+    # var(name = <id>)
+    VarRef:
+      - <KW_VAR> <PUNCT_(> <IDENT> <PUNCT_=> <IDENT> <PUNCT_)>
+
+    # int(value = <int>)
+    IntLit:
+      - <KW_INT> <PUNCT_(> <IDENT> <PUNCT_=> <INT> <PUNCT_)>
+
+    # bool(value = true|false)
+    BoolLit:
+      - <KW_BOOL> <PUNCT_(> <IDENT> <PUNCT_=> <KW_TRUE> <PUNCT_)>
+      - <KW_BOOL> <PUNCT_(> <IDENT> <PUNCT_=> <KW_FALSE> <PUNCT_)>
+
+    # unit()
+    UnitLit:
+      - <KW_UNIT> <PUNCT_(> <PUNCT_)>

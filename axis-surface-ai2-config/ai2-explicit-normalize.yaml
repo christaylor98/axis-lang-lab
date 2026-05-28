@@ -1,0 +1,185 @@
+# AI2 Normalization Rules
+# Surface: ai2-explicit
+# Target NF Version: 0.1
+# Description: AI2 already uses explicit syntax, minimal normalization needed
+
+version: "0.1"
+target_nf_version: "0.1"
+description: "Normalization rules for AI2 explicit surface"
+
+# AI2 is already very close to NF - it uses explicit syntax for all constructs
+# The main transformations needed are:
+# 1. Ensure all IfExpr have explicit else branches
+# 2. Ensure wrapper nodes (Expr) are handled correctly
+
+strategy:
+  application_order: "sequential"
+  traversal_order: "bottom_up"
+  default_behavior: "identity"
+  failure_mode: "fail_loud"
+
+# Rule application order
+rule_order:
+  - "unwrap_expr"
+  - "identity_literals"
+  - "identity_variables"
+  - "identity_let"
+  - "identity_lam"
+  - "identity_app"
+  - "identity_if"
+  - "identity_call"
+
+# Rewrite rules for AI2
+rules:
+  # Unwrap Expr wrapper (transparent in NF)
+  unwrap_expr:
+    description: "Unwrap Expr wrapper to access inner expression"
+    pattern:
+      node_kind: "Expr"
+      fields:
+        inner: { exists: true }
+    replacement:
+      nf_node: "transparent"
+      nf_fields:
+        inner: { from: "node:inner", recurse: true }
+    constraints:
+      - "inner must normalize successfully"
+
+  # Literals (already NF-compliant)
+  identity_literals:
+    description: "Pass through literal nodes (already NF)"
+    pattern:
+      node_kind_matches:
+        - "IntLit"
+        - "BoolLit"
+        - "UnitLit"
+    replacement:
+      nf_node: "identity"
+      nf_fields: "preserve_all"
+    constraints: []
+
+  # Variables (already NF-compliant)
+  identity_variables:
+    description: "Pass through variable references (already NF)"
+    pattern:
+      node_kind: "VarRef"
+      fields:
+        name: { exists: true, is_token: true }
+    replacement:
+      nf_node: "identity"
+      nf_fields: "preserve_all"
+    constraints: []
+
+  # Let expressions (already NF-compliant)
+  identity_let:
+    description: "Pass through let expressions (already NF)"
+    pattern:
+      node_kind: "LetExpr"
+      fields:
+        name: { exists: true, is_token: true }
+        value: { exists: true, is_node: true }
+        body: { exists: true, is_node: true }
+    replacement:
+      nf_node: "identity"
+      nf_fields:
+        name: { from: "token:name" }
+        value: { from: "node:value", recurse: true }
+        body: { from: "node:body", recurse: true }
+    constraints:
+      - "value and body must normalize"
+
+  # Lambda expressions (already NF-compliant)
+  identity_lam:
+    description: "Pass through lambda expressions (already NF)"
+    pattern:
+      node_kind: "LamExpr"
+      fields:
+        param: { exists: true, is_token: true }
+        body: { exists: true, is_node: true }
+    replacement:
+      nf_node: "identity"
+      nf_fields:
+        param: { from: "token:param" }
+        body: { from: "node:body", recurse: true }
+    constraints:
+      - "body must normalize"
+
+  # Application expressions (already NF-compliant, binary)
+  identity_app:
+    description: "Pass through application expressions (already NF binary form)"
+    pattern:
+      node_kind: "AppExpr"
+      fields:
+        fn: { exists: true, is_node: true }
+        arg: { exists: true, is_node: true }
+    replacement:
+      nf_node: "identity"
+      nf_fields:
+        fn: { from: "node:fn", recurse: true }
+        arg: { from: "node:arg", recurse: true }
+    constraints:
+      - "fn and arg must normalize"
+
+  # If expressions (AI2 requires explicit else, already NF-compliant)
+  identity_if:
+    description: "Pass through if expressions (AI2 requires explicit else)"
+    pattern:
+      node_kind: "IfExpr"
+      fields:
+        condition: { exists: true, is_node: true }
+        then_branch: { exists: true, is_node: true }
+        else_branch: { exists: true, is_node: true }
+    replacement:
+      nf_node: "identity"
+      nf_fields:
+        condition: { from: "node:condition", recurse: true }
+        then_branch: { from: "node:then_branch", recurse: true }
+        else_branch: { from: "node:else_branch", recurse: true }
+    constraints:
+      - "all branches must normalize"
+      - "else_branch is required by AI2 syntax"
+
+  # Registry calls (if present)
+  identity_call:
+    description: "Pass through registry calls (if present)"
+    pattern:
+      node_kind: "CallExpr"
+      fields:
+        name: { exists: true, is_token: true }
+        args: { exists: true, is_list: true }
+    replacement:
+      nf_node: "identity"
+      nf_fields:
+        name: { from: "token:name" }
+        args: { from: "nodes:args", recurse: true }
+    constraints:
+      - "all args must normalize"
+
+# Fresh name generation (not needed for AI2, but included for completeness)
+fresh_name_strategy:
+  prefix: "_ai2_tmp"
+  uniqueness: "position_based"
+  format: "{prefix}_{position}"
+  collision_handling: "fail_loud"
+
+# Error handling
+error_conditions:
+  - condition: "Unknown node kind not in AI2 schema"
+    action: "fail_with_unknown_node_error"
+  - condition: "Required field missing"
+    action: "fail_with_missing_field_error"
+  - condition: "Child normalization fails"
+    action: "propagate_child_error"
+
+# Post-normalization validation
+post_normalization:
+  validation_required: true
+  validation_spec: "NORMAL_FORM_SPEC_0.1.yaml"
+  failure_mode: "block_lowering"
+
+# Notes
+notes:
+  - "AI2 is already very close to NF"
+  - "Main work is unwrapping Expr and recursive normalization"
+  - "All AI2 constructs map 1:1 to NF admissible nodes"
+  - "No desugaring needed (AI2 is explicit by design)"

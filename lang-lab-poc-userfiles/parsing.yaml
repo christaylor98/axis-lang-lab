@@ -1,0 +1,78 @@
+parser:
+  start: Program
+
+  grammar:
+    Program:
+      - 'Decl*'
+
+    Decl:
+      - 'Function'
+      - 'EnumDecl'
+
+    Function:
+      - '<KW_FN> <IDENT> <PUNCT_(> ParamList? <PUNCT_)> <"PUNCT_->"> Type Block'
+
+    ParamList:
+      - 'Param (<PUNCT_,> Param)*'
+
+    Param:
+      - '<IDENT> <PUNCT_:> Type'
+
+    Block:
+      - '<PUNCT_{> Stmt* Expr <PUNCT_}>'
+
+    Stmt:
+      - 'LetStmt'
+
+    LetStmt:
+      - '<KW_LET> <IDENT> <PUNCT_=> Expr <PUNCT_;>'
+
+    Expr:
+      - 'IfExpr'
+      - 'MatchExpr'
+      - 'CallExpr'
+      - 'LambdaExpr'
+      - 'TupleExpr'
+      - 'ProjExpr'
+      - 'Literal'
+      - '<IDENT>'
+      - 'Block'
+
+    IfExpr:
+      - '<KW_IF> Expr Block <KW_ELSE> Block'
+
+    MatchExpr:
+      - '<KW_MATCH> Expr <PUNCT_{> MatchArm+ <PUNCT_}>'
+
+    MatchArm:
+      - 'Pattern <"PUNCT_=>"> Expr <PUNCT_,>'
+
+    ProjExpr:
+      - '<KW_PROJ> <PUNCT_(> Expr <PUNCT_,> <INT> <PUNCT_)>'
+
+    TupleExpr:
+      - '<PUNCT_(> Expr (<PUNCT_,> Expr)+ <PUNCT_)>'
+
+    CallExpr:
+      - '<IDENT> <PUNCT_(> ArgList? <PUNCT_)>'
+
+    ArgList:
+      - 'Expr (<PUNCT_,> Expr)*'
+
+    LambdaExpr:
+      - '<PUNCT_|> <IDENT> <PUNCT_|> Expr'
+
+    Type:
+      - '<IDENT>'
+
+    EnumDecl:
+      - '<KW_ENUM> <IDENT> <PUNCT_{> <IDENT> (<PUNCT_,> <IDENT>)* <PUNCT_}>'
+
+    Pattern:
+      - '<IDENT>'
+
+    Literal:
+      - '<INT>'
+      - '<BOOL>'
+      - '<STRING>'
+      - '<UNIT>'

@@ -1,0 +1,10 @@
+// Test: match expression construct
+// This tests: MatchExpr desugaring target
+// Expected: Parses successfully, fails NF validation
+
+fn classify(x) {
+  match x {
+    0 => 1,
+    _ => 2,
+  }
+}

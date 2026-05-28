@@ -1,0 +1,5 @@
+// AI2 Test 1: Simple integer literal
+// Surface-0 equivalent: 42
+// H1 equivalent: 42
+
+int(value = 42)

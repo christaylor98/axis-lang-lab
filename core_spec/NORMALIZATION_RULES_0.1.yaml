@@ -1,0 +1,406 @@
+# Normalization Rules Configuration 0.1
+# AUTHORITATIVE — defines AST → NF rewrite rules
+#
+# STATUS: Normative
+# VERSION: 0.1
+# TARGET_NF_VERSION: 0.1
+#
+# PURPOSE:
+# This configuration defines the rewrite rules that transform projected AST
+# into Normal Form (NF) AST. Normalization is semantic-preserving and mandatory.
+#
+# SCOPE:
+# - Define pattern matching on projected AST node kinds
+# - Define replacement construction using NF node kinds
+# - Define rule ordering and application strategy
+# - Enforce deterministic, total transformation
+#
+# OUT OF SCOPE:
+# - Core IR concepts (not visible at this stage)
+# - Registry function resolution (happens during lowering)
+# - Type inference or checking
+# - Name resolution beyond structural rewriting
+#
+# INVARIANTS:
+# 1. Normalization is semantic-preserving (meaning unchanged)
+# 2. Normalization is deterministic (same input → same output)
+# 3. Normalization is total (all valid AST → NF AST or loud failure)
+# 4. No Core IR constructs exist pre-lowering
+# 5. Rules apply in explicit order (no ambiguity)
+#
+# ═══════════════════════════════════════════════════════════════════════════
+# METADATA
+# ═══════════════════════════════════════════════════════════════════════════
+
+version: "0.1"
+target_nf_version: "0.1"
+description: "Normalization rules for transforming projected AST to Normal Form"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# NORMALIZATION STRATEGY
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Rules are applied in the order specified in the 'rule_order' section.
+# Each rule is applied recursively bottom-up (children before parents).
+# If no rule matches a node, it passes through unchanged (identity rule).
+# If a forbidden pattern is detected, normalization MUST fail loud.
+
+strategy:
+  application_order: "sequential"  # rules applied in listed order
+  traversal_order: "bottom_up"     # process children before parents
+  default_behavior: "identity"     # unmatched nodes pass through
+  failure_mode: "fail_loud"        # validation failures terminate immediately
+
+# ═══════════════════════════════════════════════════════════════════════════
+# RULE ORDER (CRITICAL)
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Rules MUST be applied in this exact order.
+# Reordering rules may change semantics or cause failures.
+
+rule_order:
+  - "desugar_implicit_else"
+  - "desugar_sequence"
+  - "desugar_block"
+  - "desugar_chained_app"
+  - "normalize_let"
+  - "normalize_lam"
+  - "normalize_if"
+  - "normalize_app"
+  - "normalize_call"
+  - "identity_pass"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# REWRITE RULES
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Each rule defines:
+# - pattern: What AST shape to match
+# - replacement: What NF construct to emit
+# - constraints: Additional conditions for rule application
+# - description: Human-readable explanation
+#
+# Pattern syntax:
+# - node_kind: CST/AST node name
+# - fields: Required field presence/structure
+# - children: Child node patterns
+#
+# Replacement syntax:
+# - nf_node: Target NF node kind (from NF spec)
+# - nf_fields: Field mappings (token or child reference)
+
+rules:
+  # ─────────────────────────────────────────────────────────────────────────
+  # DESUGARING RULES (eliminate surface sugar)
+  # ─────────────────────────────────────────────────────────────────────────
+
+  desugar_implicit_else:
+    description: "Convert if-without-else to if-with-explicit-unit-else"
+    pattern:
+      node_kind: "IfExpr"
+      fields:
+        condition: { exists: true }
+        then_branch: { exists: true }
+        else_branch: { exists: false }
+    replacement:
+      nf_node: "IfExpr"
+      nf_fields:
+        condition: { from: "node:condition" }
+        then_branch: { from: "node:then_branch" }
+        else_branch: { synthesize: "UnitLit" }
+    constraints:
+      - "condition and then_branch must normalize successfully"
+
+  desugar_sequence:
+    description: "Convert sequential statements to nested let bindings"
+    pattern:
+      node_kind: "SequenceExpr"
+      fields:
+        statements: { exists: true, is_list: true }
+    replacement:
+      nf_node: "nested_let_chain"
+      nf_fields:
+        statements: { from: "nodes:statements" }
+      strategy: "right_to_left_nesting"
+    constraints:
+      - "each statement must normalize successfully"
+      - "final statement becomes innermost body"
+
+  desugar_block:
+    description: "Convert block expressions to nested let bindings"
+    pattern:
+      node_kind: "BlockExpr"
+      fields:
+        statements: { exists: true, is_list: true }
+        final_expr: { exists: true }
+    replacement:
+      nf_node: "nested_let_chain"
+      nf_fields:
+        statements: { from: "nodes:statements" }
+        body: { from: "node:final_expr" }
+      strategy: "wrap_with_fresh_bindings"
+    constraints:
+      - "all statements and final_expr must normalize"
+
+  desugar_chained_app:
+    description: "Convert multi-arg application to nested binary application"
+    pattern:
+      node_kind: "AppExpr"
+      fields:
+        fn: { exists: true }
+        args: { exists: true, is_list: true, min_length: 2 }
+    replacement:
+      nf_node: "nested_app_chain"
+      nf_fields:
+        fn: { from: "node:fn" }
+        args: { from: "nodes:args" }
+      strategy: "left_associative_nesting"
+    constraints:
+      - "fn and all args must normalize successfully"
+    example:
+      before: "f(a, b, c)"
+      after: "((f a) b) c"
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # NORMALIZATION RULES (canonical form enforcement)
+  # ─────────────────────────────────────────────────────────────────────────
+
+  normalize_let:
+    description: "Ensure let bindings conform to NF LetExpr shape"
+    pattern:
+      node_kind: "LetExpr"
+      fields:
+        name: { exists: true, is_token: true }
+        value: { exists: true, is_node: true }
+        body: { exists: true, is_node: true }
+    replacement:
+      nf_node: "LetExpr"
+      nf_fields:
+        name: { from: "token:name" }
+        value: { from: "node:value", recurse: true }
+        body: { from: "node:body", recurse: true }
+    constraints:
+      - "value and body must normalize to NF expressions"
+
+  normalize_lam:
+    description: "Ensure lambda abstractions conform to NF LamExpr shape"
+    pattern:
+      node_kind: "LamExpr"
+      fields:
+        param: { exists: true, is_token: true }
+        body: { exists: true, is_node: true }
+    replacement:
+      nf_node: "LamExpr"
+      nf_fields:
+        param: { from: "token:param" }
+        body: { from: "node:body", recurse: true }
+    constraints:
+      - "body must normalize to NF expression"
+
+  normalize_if:
+    description: "Ensure conditionals conform to NF IfExpr shape"
+    pattern:
+      node_kind: "IfExpr"
+      fields:
+        condition: { exists: true, is_node: true }
+        then_branch: { exists: true, is_node: true }
+        else_branch: { exists: true, is_node: true }
+    replacement:
+      nf_node: "IfExpr"
+      nf_fields:
+        condition: { from: "node:condition", recurse: true }
+        then_branch: { from: "node:then_branch", recurse: true }
+        else_branch: { from: "node:else_branch", recurse: true }
+    constraints:
+      - "all branches must normalize to NF expressions"
+      - "else_branch REQUIRED (already enforced by desugar_implicit_else)"
+
+  normalize_app:
+    description: "Ensure function application conforms to NF AppExpr shape"
+    pattern:
+      node_kind: "AppExpr"
+      fields:
+        fn: { exists: true, is_node: true }
+        arg: { exists: true, is_node: true }
+    replacement:
+      nf_node: "AppExpr"
+      nf_fields:
+        fn: { from: "node:fn", recurse: true }
+        arg: { from: "node:arg", recurse: true }
+    constraints:
+      - "fn and arg must normalize to NF expressions"
+
+  normalize_call:
+    description: "Ensure registry calls conform to NF CallExpr shape"
+    pattern:
+      node_kind: "CallExpr"
+      fields:
+        name: { exists: true, is_token: true }
+        args: { exists: true, is_list: true }
+    replacement:
+      nf_node: "CallExpr"
+      nf_fields:
+        name: { from: "token:name" }
+        args: { from: "nodes:args", recurse: true }
+    constraints:
+      - "all args must normalize to NF expressions"
+      - "registry validation happens during lowering (not here)"
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # IDENTITY RULES (pass-through for already-NF constructs)
+  # ─────────────────────────────────────────────────────────────────────────
+
+  identity_pass:
+    description: "Pass through nodes already in NF shape"
+    pattern:
+      node_kind_matches:
+        - "IntLit"
+        - "BoolLit"
+        - "UnitLit"
+        - "VarRef"
+        - "Expr"
+        - "Program"
+    replacement:
+      nf_node: "identity"
+      nf_fields: "preserve_all"
+    constraints:
+      - "children must still normalize recursively"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# FRESH NAME GENERATION
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Some desugaring rules require generating fresh variable names.
+# Strategy: Use unique, deterministic names based on node position.
+
+fresh_name_strategy:
+  prefix: "_nf_tmp"
+  uniqueness: "position_based"  # based on node position in AST
+  format: "{prefix}_{position}"
+  collision_handling: "fail_loud"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ERROR HANDLING
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Normalization MUST fail loud on:
+
+error_conditions:
+  - condition: "No rule matches a node and it's not in NF admissible set"
+    action: "fail_with_unknown_node_error"
+    
+  - condition: "Pattern matches but constraints fail"
+    action: "fail_with_constraint_violation_error"
+    
+  - condition: "Replacement synthesis fails"
+    action: "fail_with_synthesis_error"
+    
+  - condition: "Fresh name collision"
+    action: "fail_with_collision_error"
+    
+  - condition: "Recursive normalization fails on child"
+    action: "propagate_child_error"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# VALIDATION INTEGRATION
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# After normalization completes, NF validation MUST run before lowering.
+
+post_normalization:
+  validation_required: true
+  validation_spec: "NORMAL_FORM_SPEC_0.1.yaml"
+  failure_mode: "block_lowering"
+  success_contract: "output is guaranteed NF-compliant"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SURFACE-SPECIFIC EXTENSIONS
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Individual surfaces may define additional rules, but:
+# - MUST produce the same NF node set
+# - MUST preserve semantics
+# - MUST remain deterministic
+# - MUST NOT introduce new NF node kinds
+
+surface_extensions:
+  policy: "allowed_with_constraints"
+  constraints:
+    - "Must target same NF spec version"
+    - "Must not introduce new NF node kinds"
+    - "Must preserve semantic equivalence"
+    - "Must maintain determinism"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# EXAMPLES
+# ═══════════════════════════════════════════════════════════════════════════
+
+examples:
+  - description: "If without else"
+    before:
+      ast: |
+        IfExpr {
+          condition: VarRef("x"),
+          then_branch: IntLit(42)
+        }
+    after:
+      nf_ast: |
+        IfExpr {
+          condition: VarRef("x"),
+          then_branch: IntLit(42),
+          else_branch: UnitLit
+        }
+
+  - description: "Block with statements"
+    before:
+      ast: |
+        BlockExpr {
+          statements: [
+            LetStmt("x", IntLit(10)),
+            LetStmt("y", IntLit(20))
+          ],
+          final_expr: VarRef("x")
+        }
+    after:
+      nf_ast: |
+        LetExpr {
+          name: "x",
+          value: IntLit(10),
+          body: LetExpr {
+            name: "y",
+            value: IntLit(20),
+            body: VarRef("x")
+          }
+        }
+
+  - description: "Multi-arg application"
+    before:
+      ast: |
+        AppExpr {
+          fn: VarRef("f"),
+          args: [VarRef("a"), VarRef("b"), VarRef("c")]
+        }
+    after:
+      nf_ast: |
+        AppExpr {
+          fn: AppExpr {
+            fn: AppExpr {
+              fn: VarRef("f"),
+              arg: VarRef("a")
+            },
+            arg: VarRef("b")
+          },
+          arg: VarRef("c")
+        }
+
+# ═══════════════════════════════════════════════════════════════════════════
+# NOTES
+# ═══════════════════════════════════════════════════════════════════════════
+
+notes:
+  - "This config is the rewrite map from projected AST to NF"
+  - "No Core IR concepts exist at this stage"
+  - "Registry resolution happens ONLY during lowering"
+  - "All surfaces must normalize to the same NF shape"
+  - "Normalization is the ONLY rewrite stage before lowering"
+  - "Lowering accepts ONLY NF AST"

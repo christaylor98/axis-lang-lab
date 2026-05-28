@@ -1,0 +1,41 @@
+lexer:
+  charset: ascii
+  case_sensitive: true
+
+  whitespace:
+    pattern: "[ \\t\\n\\r]+"
+    skip: true
+
+  comments:
+    - pattern: "//.*"
+      skip: true
+
+  keywords:
+    - fn
+    - let
+    - if
+    - else
+
+  identifiers:
+    pattern: "[A-Za-z_][A-Za-z0-9_]*"
+
+  literals:
+    int:
+      pattern: "[0-9]+"
+      base: 10
+
+    bool:
+      values: ["true", "false"]
+
+    unit:
+      literal: "()"
+      single_token: true
+
+  punctuation:
+    - "{"
+    - "}"
+    - "("
+    - ")"
+    - ","
+    - ";"
+    - "="

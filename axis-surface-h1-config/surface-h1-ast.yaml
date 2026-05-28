@@ -1,0 +1,311 @@
+nodes:
+  Program:
+    fields:
+      items:
+        from: children(0..)
+
+  Item:
+    fields:
+      variant:
+        from: child(0)
+
+  FnDecl:
+    fields:
+      name:
+        from: token(IDENT)
+      params:
+        from: child(2)
+      body:
+        from: child(4)
+
+  ParamList:
+    fields:
+      params:
+        from: children(0..)
+
+  ParamRest:
+    fields:
+      param:
+        from: child(1)
+
+  Param:
+    fields:
+      name:
+        from: token(IDENT)
+
+  ControllerDecl:
+    fields:
+      name:
+        from: token(IDENT)
+      members:
+        from: children(2..)
+
+  ControllerMember:
+    fields:
+      event:
+        from: child(1)
+      handler:
+        from: child(3)
+
+  EventSig:
+    fields:
+      name:
+        from: token(IDENT)
+      params:
+        from: child(1)
+
+  RunStmt:
+    fields:
+      controller:
+        from: token(IDENT)
+
+  Block:
+    fields:
+      content:
+        from: child(1)
+
+  BlockContent:
+    fields:
+      stmts:
+        from: children(0..)
+
+  Stmt:
+    fields:
+      variant:
+        from: child(0)
+
+  LetStmt:
+    fields:
+      name:
+        from: token(IDENT)
+      value:
+        from: child(2)
+
+  IntentDirectiveStmt:
+    fields:
+      directive:
+        from: child(0)
+
+  IntentDirective:
+    fields:
+      key:
+        from: token(IDENT)
+
+  Terminator:
+    fields:
+      kind:
+        from: child(0)
+
+  ExprStmt:
+    fields:
+      expr:
+        from: child(0)
+
+  Expr:
+    fields:
+      variant:
+        from: child(0)
+
+  IfExpr:
+    fields:
+      condition:
+        from: child(1)
+      then_block:
+        from: child(2)
+      else_block:
+        from: child(4)
+
+  MatchExpr:
+    fields:
+      scrutinee:
+        from: child(1)
+      arms:
+        from: children(3..)
+
+  MatchArm:
+    fields:
+      pattern:
+        from: child(0)
+      expr:
+        from: child(2)
+
+  Pattern:
+    fields:
+      variant:
+        from: child(0)
+
+  IdentPat:
+    fields:
+      name:
+        from: token(IDENT)
+
+  CtorPat:
+    fields:
+      name:
+        from: token(IDENT)
+      patterns:
+        from: child(1)
+
+  PatList:
+    fields:
+      patterns:
+        from: children(0..)
+
+  PatListRest:
+    fields:
+      pattern:
+        from: child(1)
+
+  ForExpr:
+    fields:
+      var:
+        from: token(IDENT)
+      iter:
+        from: child(3)
+      body:
+        from: child(4)
+
+  WhileExpr:
+    fields:
+      condition:
+        from: child(1)
+      body:
+        from: child(2)
+
+  LoopExpr:
+    fields:
+      body:
+        from: child(1)
+
+  SpawnExpr:
+    fields:
+      body:
+        from: child(1)
+
+  JoinExpr:
+    fields:
+      handle:
+        from: child(1)
+
+  ChannelExpr:
+    fields:
+      type_arg:
+        from: children(1..)
+
+  GenericArgs:
+    fields:
+      type_name:
+        from: child(1)
+
+  TypeName:
+    fields:
+      name:
+        from: token(IDENT)
+
+  SendExpr:
+    fields:
+      channel:
+        from: child(2)
+      value:
+        from: child(4)
+
+  RecvExpr:
+    fields:
+      channel:
+        from: child(2)
+
+  EqualityExpr:
+    fields:
+      left:
+        from: child(0)
+      ops:
+        from: children(1..)
+
+  EqualityOp:
+    fields:
+      operator:
+        from: child(0)
+      right:
+        from: child(1)
+
+  RelExpr:
+    fields:
+      left:
+        from: child(0)
+      ops:
+        from: children(1..)
+
+  RelOp:
+    fields:
+      operator:
+        from: child(0)
+      right:
+        from: child(1)
+
+  AddExpr:
+    fields:
+      left:
+        from: child(0)
+      ops:
+        from: children(1..)
+
+  AddOp:
+    fields:
+      operator:
+        from: child(0)
+      right:
+        from: child(1)
+
+  MulExpr:
+    fields:
+      left:
+        from: child(0)
+      ops:
+        from: children(1..)
+
+  MulOp:
+    fields:
+      operator:
+        from: child(0)
+      right:
+        from: child(1)
+
+  UnaryExpr:
+    fields:
+      variant:
+        from: child(0)
+
+  CallExpr:
+    fields:
+      target:
+        from: child(0)
+      suffixes:
+        from: children(1..)
+
+  CallSuffix:
+    fields:
+      args:
+        from: child(1)
+
+  ArgList:
+    fields:
+      args:
+        from: children(0..)
+
+  ArgListRest:
+    fields:
+      arg:
+        from: child(1)
+
+  Primary:
+    fields:
+      variant:
+        from: child(0)
+
+  Literal:
+    fields:
+      value:
+        from: child(0)
+
+  Empty:
+    fields: {}

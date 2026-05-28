@@ -1,0 +1,29 @@
+# Minimal spec for Phase 1/2 parser (fn, if, else, identifiers, basic punctuation)
+lexer:
+  charset: ascii
+  case_sensitive: true
+
+  whitespace:
+    pattern: "[ \\t\\n\\r]+"
+    skip: true
+
+  keywords:
+    - fn
+    - if
+    - else
+
+  identifiers:
+    pattern: "[A-Za-z_][A-Za-z0-9_]*"
+
+  literals:
+    unit:
+      literal: "()"
+      single_token: true
+
+  punctuation:
+    - "{"
+    - "}"
+    - "("
+    - ")"
+    - ","
+    - ";"

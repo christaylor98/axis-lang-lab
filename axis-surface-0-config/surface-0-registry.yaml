@@ -1,0 +1,17 @@
+# surface-0-registry.yaml
+registry:
+  operators:
+    - name: core.math.add
+      stack_pop: 2
+      stack_push: 1
+      core_ir_op: add
+
+    - name: core.math.mul
+      stack_pop: 2
+      stack_push: 1
+      core_ir_op: mul
+
+    - name: core.math.sub
+      stack_pop: 2
+      stack_push: 1
+      core_ir_op: sub

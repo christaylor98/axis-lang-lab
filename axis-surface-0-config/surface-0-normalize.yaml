@@ -1,0 +1,277 @@
+# Surface-0 Normalization Rules
+# Surface: surface-0 (RPN/stack-based)
+# Target NF Version: 0.1
+# Description: Surface-0 is stack-based RPN - requires significant transformation to NF
+
+version: "0.1"
+target_nf_version: "0.1"
+description: "Normalization rules for Surface-0 (RPN stack-based surface)"
+
+# Surface-0 uses RPN (Reverse Polish Notation) stack-based syntax
+# This requires converting stack operations to explicit functional form:
+# - arg N → lambda parameter reference
+# - lit T V → literal value
+# - call OP → function application
+# - Stack-based evaluation → expression tree
+
+strategy:
+  application_order: "sequential"
+  traversal_order: "bottom_up"
+  default_behavior: "fail_loud"
+  failure_mode: "fail_loud"
+
+rule_order:
+  - "desugar_program"
+  - "desugar_decl"
+  - "desugar_function"
+  - "desugar_instruction_sequence"
+  - "desugar_arg"
+  - "desugar_lit"
+  - "desugar_call"
+  - "identity_nf_nodes"
+
+rules:
+  # ═══════════════════════════════════════════════════════════════════════
+  # PROGRAM STRUCTURE
+  # ═══════════════════════════════════════════════════════════════════════
+
+  desugar_program:
+    description: "Extract first function from Program"
+    pattern:
+      node_kind: "Program"
+      fields:
+        decls: { exists: true, is_list: true }
+    replacement:
+      nf_node: "extract_first_decl"
+      nf_fields:
+        decls: { from: "nodes:decls", recurse: true }
+      strategy: "extract_first_and_normalize"
+    constraints:
+      - "at least one declaration must exist"
+
+  desugar_decl:
+    description: "Unwrap Decl to access Function"
+    pattern:
+      node_kind: "Decl"
+      fields:
+        func: { exists: true, is_node: true }
+    replacement:
+      nf_node: "transparent"
+      nf_fields:
+        func: { from: "node:func", recurse: true }
+    constraints: []
+
+  desugar_function:
+    description: "Convert RPN Function to lambda expression"
+    pattern:
+      node_kind: "Function"
+      fields:
+        name: { exists: true, is_token: true }
+        body: { exists: true, is_list: true }
+    replacement:
+      nf_node: "rpn_to_lambda"
+      nf_fields:
+        name: { from: "token:name" }
+        body: { from: "nodes:body", recurse: true }
+      strategy: "evaluate_rpn_stack_to_expression"
+    constraints:
+      - "body is list of Instructions"
+      - "RPN evaluation must produce valid expression tree"
+    notes:
+      - "fn f { arg 0  arg 1  call add } → lam(p0, lam(p1, add(p0, p1)))"
+      - "Stack-based → functional (explicit parameters)"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # RPN INSTRUCTION EVALUATION
+  # ═══════════════════════════════════════════════════════════════════════
+
+  desugar_instruction_sequence:
+    description: "Evaluate RPN instruction sequence to expression tree"
+    pattern:
+      node_kind: "InstructionSequence"
+      fields:
+        instructions: { exists: true, is_list: true }
+    replacement:
+      nf_node: "evaluate_rpn_stack"
+      nf_fields:
+        instructions: { from: "nodes:instructions" }
+      strategy: "stack_based_evaluation"
+    constraints:
+      - "RPN evaluation must leave exactly one value on stack"
+    notes:
+      - "[ lit Int 42, lit Int 10, call add ] → add(42, 10)"
+
+  desugar_arg:
+    description: "Convert arg instruction to parameter reference"
+    pattern:
+      node_kind: "Arg"
+      fields:
+        index: { exists: true, is_token: true }
+    replacement:
+      nf_node: "parameter_reference"
+      nf_fields:
+        index: { from: "token:index" }
+      strategy: "map_to_param_name"
+    constraints:
+      - "index must be valid integer"
+    notes:
+      - "arg 0 → first lambda parameter"
+      - "arg 1 → second lambda parameter"
+      - "Maps to VarRef with synthesized name (p0, p1, etc.)"
+
+  desugar_lit:
+    description: "Convert lit instruction to literal value"
+    pattern:
+      node_kind: "Lit"
+      fields:
+        type_name: { exists: true, is_token: true }
+        value: { exists: true, is_token: true }
+    replacement:
+      nf_node: "literal_from_type_and_value"
+      nf_fields:
+        type_name: { from: "token:type_name" }
+        value: { from: "token:value" }
+      strategy: "construct_typed_literal"
+    constraints:
+      - "type_name must be valid (Int, Bool, Unit, etc.)"
+      - "value must match type"
+    notes:
+      - "lit Int 42 → IntLit(42)"
+      - "lit Bool true → BoolLit(true)"
+
+  desugar_call:
+    description: "Convert call instruction to function application/call"
+    pattern:
+      node_kind: "Call"
+      fields:
+        operation: { exists: true, is_token: true }
+    replacement:
+      nf_node: "function_call_or_app"
+      nf_fields:
+        operation: { from: "token:operation" }
+      strategy: "pop_args_from_stack_and_apply"
+    constraints:
+      - "operation must be known function/operator"
+      - "stack must have sufficient arguments"
+    notes:
+      - "call add (with stack [a, b]) → add(a, b) or app(app(add, a), b)"
+      - "Binary ops become nested AppExpr or CallExpr"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # IDENTITY RULES
+  # ═══════════════════════════════════════════════════════════════════════
+
+  identity_nf_nodes:
+    description: "Pass through already-NF nodes (from RPN evaluation)"
+    pattern:
+      node_kind_matches:
+        - "IntLit"
+        - "BoolLit"
+        - "UnitLit"
+        - "VarRef"
+        - "LetExpr"
+        - "LamExpr"
+        - "AppExpr"
+        - "IfExpr"
+        - "CallExpr"
+    replacement:
+      nf_node: "identity"
+      nf_fields: "preserve_all"
+    constraints: []
+
+# Fresh name generation (for synthesized parameter names)
+fresh_name_strategy:
+  prefix: "p"  # p0, p1, p2 for parameters
+  uniqueness: "position_based"
+  format: "{prefix}{position}"
+  collision_handling: "fail_loud"
+
+# RPN Stack Evaluation Strategy
+rpn_evaluation:
+  description: "Convert RPN instruction sequence to expression tree"
+  algorithm: "stack_based"
+  steps:
+    - "Initialize empty stack"
+    - "For each instruction:"
+    - "  arg N: push VarRef(pN) to stack"
+    - "  lit T V: push Literal(T, V) to stack"
+    - "  call OP: pop required args, push Application/Call node"
+    - "Final stack must have exactly one expression"
+    - "That expression is the function body"
+  
+  arity_table:
+    description: "Known operation arities"
+    operations:
+      add: 2
+      sub: 2
+      mul: 2
+      div: 2
+      eq: 2
+      lt: 2
+      gt: 2
+      and: 2
+      or: 2
+      not: 1
+
+# Error handling
+error_conditions:
+  - condition: "RPN stack underflow (insufficient operands)"
+    action: "fail_with_stack_underflow_error"
+  - condition: "RPN stack overflow (multiple values remaining)"
+    action: "fail_with_stack_overflow_error"
+  - condition: "Unknown operation in call instruction"
+    action: "fail_with_unknown_operation_error"
+  - condition: "Type mismatch in literal"
+    action: "fail_with_type_error"
+  - condition: "Invalid parameter index"
+    action: "fail_with_invalid_index_error"
+
+# Post-normalization validation
+post_normalization:
+  validation_required: true
+  validation_spec: "NORMAL_FORM_SPEC_0.1.yaml"
+  failure_mode: "block_lowering"
+
+# Example transformations
+examples:
+  - description: "Simple addition"
+    surface_0_rpn: |
+      fn add_nums
+        arg 0
+        arg 1
+        call add
+      end
+    normalized_nf: |
+      LamExpr {
+        param: "p0",
+        body: LamExpr {
+          param: "p1",
+          body: CallExpr {
+            name: "add",
+            args: [VarRef("p0"), VarRef("p1")]
+          }
+        }
+      }
+
+  - description: "Literal and call"
+    surface_0_rpn: |
+      fn inc
+        arg 0
+        lit Int 1
+        call add
+      end
+    normalized_nf: |
+      LamExpr {
+        param: "p0",
+        body: CallExpr {
+          name: "add",
+          args: [VarRef("p0"), IntLit(1)]
+        }
+      }
+
+notes:
+  - "Surface-0 requires full RPN → expression tree conversion"
+  - "Parameters are implicit (determined by arg instructions)"
+  - "Function arity inferred from max arg index + 1"
+  - "Binary operators become CallExpr or nested AppExpr"
+  - "This is the most complex normalization (fundamental representation change)"
