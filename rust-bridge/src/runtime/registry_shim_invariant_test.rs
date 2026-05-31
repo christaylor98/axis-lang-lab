@@ -39,15 +39,15 @@ mod registry_shim_invariant_tests {
             "axis_char_to_str",
             
             // IO primitives
-            "axis_io_print",
-            "axis_io_eprint",
-            
+            "print",
+            "eprint",
+
             // Filesystem primitives
-            "axis_fs_read_text",
-            "axis_fs_write_text",
-            
+            "file_read",
+            "file_write",
+
             // Process primitives
-            "axis_proc_args",
+            "args",
             
             // JSON parsing
             "axis_json_parse",
@@ -67,31 +67,31 @@ mod registry_shim_invariant_tests {
 
     /// All symbols mapped in get_foreign_symbol_mapping()
     ///
-    /// This extracts ONLY the registry-prefixed symbols (axis_*) from the mapping table.
+    /// This lists canonical registry symbols as they appear in the mapping table keys.
     fn get_mapped_registry_symbols() -> HashSet<&'static str> {
         let mut set = HashSet::new();
-        
+
         // String operations
         set.insert("axis_str_len");
         set.insert("axis_str_char");
         set.insert("axis_str_char_at");
         set.insert("axis_str_slice");
         set.insert("axis_str_concat");
-        
+
         // Integer/character operations
         set.insert("axis_int_to_str");
         set.insert("axis_char_to_str");
-        
+
         // IO operations
-        set.insert("axis_io_print");
-        set.insert("axis_io_eprint");
-        
+        set.insert("print");
+        set.insert("eprint");
+
         // Process operations
-        set.insert("axis_proc_args");
-        
+        set.insert("args");
+
         // File operations
-        set.insert("axis_fs_read_text");
-        set.insert("axis_fs_write_text");
+        set.insert("file_read");
+        set.insert("file_write");
         
         // Core structural
         set.insert("axis_proj");

@@ -22,7 +22,7 @@ fn get_foreign_symbol_mapping() -> HashMap<&'static str, &'static str> {
     map.insert("axis_int_add", "shim::__add__");
     
     // Comparison operations
-    map.insert("__eq__", "shim::__eq__");
+    map.insert("eq", "shim::__eq__");
     map.insert("__neq__", "shim::__neq__");
     map.insert("__lt__", "shim::__lt__");
     map.insert("__lte__", "shim::__lte__");
@@ -69,28 +69,23 @@ fn get_foreign_symbol_mapping() -> HashMap<&'static str, &'static str> {
     map.insert("truthy", "shim::truthy");
     
     // IO operations
-    map.insert("io_print", "shim::io_print");
-    map.insert("axis_io_print", "shim::io_print");
-    map.insert("io_eprint", "shim::io_eprint");
-    map.insert("axis_io_eprint", "shim::io_eprint");
+    map.insert("print", "shim::io_print");
+    map.insert("eprint", "shim::io_eprint");
     map.insert("io_read", "shim::io_read");
     map.insert("axis_io_make_error", "shim::axis_io_make_error");
     
     // Process operations
-    map.insert("axis_proc_args", "shim::axis_proc_args");
+    map.insert("args", "shim::axis_proc_args");
     
     // JSON operations (minimal compiler implementation)
     map.insert("axis.json.parse", "shim::axis_json_parse");
     
     // File operations
-    map.insert("fs_read_text", "shim::fs_read_text");
-    map.insert("axis_fs_read_text", "shim::fs_read_text");
-    map.insert("fs_read_to_string", "shim::fs_read_text");  // Alias for compatibility
-    map.insert("fs_write_text", "shim::fs_write_text");
-    map.insert("axis_fs_write_text", "shim::fs_write_text");
-    
+    map.insert("file_read", "shim::fs_read_text");
+    map.insert("file_write", "shim::fs_write_text");
+
     // Debug
-    map.insert("debug_trace", "shim::debug_trace");
+    map.insert("trace", "shim::debug_trace");
     
     // String/tag interning
     map.insert("intern_str", "shim::intern_str");
@@ -183,8 +178,8 @@ fn get_foreign_symbol_mapping() -> HashMap<&'static str, &'static str> {
     map.insert("axis_lower_lower_all", "axis_lower_lower_all");
     map.insert("axis_parser_parse", "axis_parser_parse");
     
-    // NOTE: axis_char_to_str, axis_str_char_at, axis_io_make_error, and fs_read_to_string
-    // are runtime primitives mapped above (lines 30-70), NOT Axis-defined functions.
+    // NOTE: axis_char_to_str, axis_str_char_at, and axis_io_make_error
+    // are runtime primitives mapped above, NOT Axis-defined functions.
     // Do not add identity mappings for runtime primitives here.
 
     map.insert("fs_exists", "fs_exists");

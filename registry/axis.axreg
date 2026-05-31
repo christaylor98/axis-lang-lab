@@ -77,13 +77,13 @@ end
 // IO primitives
 // ------------------------------------------------------------
 
-fn axis_io_print
+fn print
 arity 1
 deterministic false
 profile io
 end
 
-fn axis_io_eprint
+fn eprint
 arity 1
 deterministic false
 profile io
@@ -94,13 +94,13 @@ end
 // Filesystem primitives
 // ------------------------------------------------------------
 
-fn axis_fs_read_text
+fn file_read
 arity 1
 deterministic false
 profile fs
 end
 
-fn axis_fs_write_text
+fn file_write
 arity 2
 deterministic false
 profile fs
@@ -111,7 +111,7 @@ end
 // Process primitives
 // ------------------------------------------------------------
 
-fn axis_proc_args
+fn args
 arity 0
 deterministic false
 profile process
